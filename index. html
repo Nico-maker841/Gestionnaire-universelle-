@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tap &amp; Track • Gestionnaire d'Inventaire</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;display=swap');
+        :root {
+            --primary: #00d4ff;
+        }
+        * { font-family: 'Inter', system_ui, sans-serif; }
+        .tap-btn {
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .tap-btn:active {
+            transform: scale(0.95);
+            box-shadow: 0 0 0 8px rgba(0, 212, 255, 0.3);
+        }
+        .scan-animation {
+            animation: scanPulse 2s infinite;
+        }
+        @keyframes scanPulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+        .stock-bar {
+            height: 8px;
+            background: linear-gradient(90deg, #00d4ff var(--stock-level), #e5e7eb var(--stock-level));
+            border-radius: 9999px;
+        }
+    </style>
+</head>
+<body class="bg-gray-950 text-white">
+    <!-- HEADER -->
+    <header class="bg-black border-b border-white/10 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-6 py-5 flex items-center justify-between">
+            <div class="flex items-center gap-x-3">
+                <div class="w-10 h-10 bg-[#00d4ff] text-black rounded-2xl flex items-center justify-center text-2xl font-bold">📟</div>
+                <div>
+                    <h1 class="text-3xl font-semibold tracking-tight">Tap &amp; Track</h1>
+                    <p class="text-xs text-emerald-400 -mt-1">Stock de matériel en temps réel</p>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-x-8">
+                <!-- Stats rapides -->
+                <div onclick="showStatsModal()" class="flex items-center gap-x-5 cursor-pointer hover:bg-white/5 px-4 py-2 rounded-3xl transition-colors">
+                    <div class="text-center">
+                        <div id="total-items" class="text-2xl font-semibold text-[#00d4ff]">28</div>
+                        <div class="text-[10px] text-gray-400 uppercase tracking-widest">Articles</div>
+                    </div>
+                    <div class="h-8 w-px bg-white/10"></div>
+                    <div class="text-center">
+                        <div id="total-stock" class="text-2xl font-semibold">487</div>
+                        <div class="text-[10px] text-gray-400 uppercase tracking-widest">En stock</div>
+                    </div>
+                    <div class="h-8 w-px bg-white/10"></div>
+                    <div class="text-center">
+                        <div id="low-stock-count" class="text-2xl font-semibold text-orange-400">3</div>
+                        <div class="text-[10px] text-gray-400 uppercase tracking-widest">Stock bas</div>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-x-2 bg-white/10 hover:bg-white/20 px-5 h-11 rounded-3xl cursor-pointer transition-colors" onclick="simulateScan()">
+                    <i class="fa-solid fa-barcode text-[#00d4ff]"></i>
+                    <span class="font-medium">Scanner / Tap</span>
+                    <span class="text-xs bg-[#00d4ff] text-black px-2.5 py-0.5 rounded-2xl font-bold">CTRL + K</span>
+                </div>
+
+                <div class="flex items-center gap-x-2">
+                    <div class="w-8 h-8 bg-emerald-400 text-black rounded-2xl flex items-center justify-center text-xl">👷</div>
+                    <div>
+                        <div class="text-sm font-medium">Atelier B42</div>
+                        <div class="text-xs text-emerald-400">En ligne • 25 mars 2026</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="max-w-7xl mx-auto px-6 py-8 flex gap-8">
+        
+        <!-- SIDEBAR -->
+        <div class="w-72 flex-shrink-0">
+            <div class="bg-white/5 backdrop-blur-xl rounded-3xl p-5 sticky top-8">
+                <h2 class="uppercase text-xs tracking-[1px] text-gray-400 mb-4 px-3">Catégories</h2>
+                
+                <div onclick="filterByCategory('all')" id="cat-all" class="category-tab flex items-center gap-x-3 px-4 py-4 rounded-2xl bg-white/10 mb-2 cursor-pointer">
+                    <i class="fa-solid fa-boxes-stacked text-[#00d4ff]"></i>
+                    <span class="font-medium flex-1">Tout le matériel</span>
+                    <span id="count-all" class="text-xs bg-white/20 px-3 py-1 rounded-2xl">28</span>
+                </div>
+                
+                <div onclick="filterByCategory('Outils')" id="cat-outils" class="category-tab flex items-center gap-x-3 px-4 py-4 rounded-2xl hover:bg-white/10 mb-2 cursor-pointer">
+                    <i class="fa-solid fa-screwdriver-wrench text-amber-400"></i>
+                    <span class="font-medium flex-1">Outils</span>
+                    <span id="count-outils" class="text-xs bg-white/20 px-3 py-1 rounded-2xl">9</span>
+                </div>
+                
+                <div onclick="filterByCategory('Livres')" id="cat-livres" class="category-tab flex items-center gap-x-3 px-4 py-4 rounded-2xl hover:bg-white/10 mb-2 cursor-pointer">
+                    <i class="fa-solid fa-book text-purple-400"></i>
+                    <span class="font-medium flex-1">Livres</span>
+                    <span id="count-livres" class="text-xs bg-white/20 px-3 py-1 rounded-2xl">6</span>
+                </div>
+                
+                <div onclick="filterByCategory('Composants électroniques')" id="cat-composants" class="category-tab flex items-center gap-x-3 px-4 py-4 rounded-2xl hover:bg-white/10 mb-2 cursor-pointer">
+                    <i class="fa-solid fa-microchip text-cyan-400"></i>
+                    <span class="font-medium flex-1">Composants électroniques</span>
+                    <span id="count-composants" class="text-xs bg-white/20 px-3 py-1 rounded-2xl">13</span>
+                </div>
+
+                <div class="h-px bg-white/10 my-6"></div>
+                
+                <!-- Actions rapides -->
+                <button onclick="showAddModal()" 
+                        class="w-full h-12 bg-[#00d4ff] hover:bg-[#00b8e0] text-black font-semibold rounded-3xl flex items-center justify-center gap-x-3 text-lg mb-3">
+                    <i class="fa-solid fa-plus"></i>
+                    <span>Ajouter un article</span>
+                </button>
+                
+                <button onclick="exportCSV()" 
+                        class="w-full h-12 border border-white/30 hover:border-white/60 font-medium rounded-3xl flex items-center justify-center gap-x-3">
+                    <i class="fa-solid fa-file-export"></i>
+                    <span>Exporter en CSV</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- MAIN CONTENT -->
+        <div class="flex-1">
+            
+            <!-- Barre de recherche + filtres -->
+            <div class="flex gap-4 mb-8">
+                <div class="flex-1 relative">
+                    <i class="fa-solid fa-magnifying-glass absolute left-5 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                    <input 
+                        id="search-input"
+                        onkeyup="if(event.keyCode===13) filterTable()"
+                        type="text" 
+                        placeholder="Rechercher un outil, livre, composant… (ex: résistance, marteau)"
+                        class="w-full bg-white/10 border border-white/10 focus:border-[#00d4ff] rounded-3xl h-12 pl-12 pr-6 text-white placeholder-gray-400 outline-none">
+                </div>
+                
+                <select id="sort-select" onchange="filterTable()" class="bg-white/10 border border-white/10 rounded-3xl px-6 outline-none">
+                    <option value="name">Trier par nom</option>
+                    <option value="quantity">Trier par quantité ↓</option>
+                    <option value="last_updated">Dernière mise à jour</option>
+                </select>
+                
+                <div onclick="toggleLowStock()" id="low-stock-filter"
+                     class="flex items-center px-6 bg-orange-400/10 text-orange-400 hover:bg-orange-400/20 rounded-3xl font-medium cursor-pointer">
+                    <i class="fa-solid fa-triangle-exclamation mr-2"></i>
+                    Stock bas uniquement
+                </div>
+            </div>
+
+            <!-- TABLEAU -->
+            <div class="bg-white/5 backdrop-blur-xl rounded-3xl overflow-hidden">
+                <table class="w-full" id="inventory-table">
+                    <thead>
+                        <tr class="border-b border-white/10 text-xs uppercase tracking-widest text-gray-400">
+                            <th class="text-left py-5 px-8">Article</th>
+                            <th class="text-left py-5 px-8">Catégorie</th>
+                            <th class="text-left py-5 px-8">Quantité</th>
+                            <th class="text-left py-5 px-8">Emplacement</th>
+                            <th class="text-left py-5 px-8">Seuil d'alerte</th>
+                            <th class="text-right py-5 px-8">Actions Tap</th>
+                        </tr>
+                    </thead>
+                    <tbody id="table-body" class="text-sm divide-y divide-white/10"></tbody>
+                </table>
+            </div>
+
+            <p class="text-xs text-center text-gray-500 mt-6">Données sauvegardées automatiquement • Dernière mise à jour il y a <span id="last-sync" class="font-medium text-emerald-400">8 secondes</span></p>
+        </div>
+    </div>
+
+    <!-- MODAL AJOUT -->
+    <div onclick="if(event.target.id === 'add-modal')hideAddModal()" id="add-modal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-xl z-[9999] flex items-center justify-center">
+        <div onclick="event.stopImmediatePropagation()" class="bg-gray-900 rounded-3xl max-w-md w-full mx-4 overflow-hidden">
+            <div class="px-8 pt-8 pb-6">
+                <h2 class="text-2xl font-semibold mb-6">Nouvel article • Tap &amp; Track</h2>
+                
+                <div class="space-y-6">
+                    <div>
+                        <label class="text-xs uppercase tracking-widest mb-1 block">Nom de l'article</label>
+                        <input id="new-name" type="text" class="w-full bg-white/10 border border-white/10 rounded-2xl px-5 h-12 outline-none focus:border-[#00d4ff]" placeholder="Résistance 220Ω">
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="text-xs uppercase tracking-widest mb-1 block">Catégorie</label>
+                            <select id="new-category" class="w-full bg-white/10 border border-white/10 rounded-2xl px-5 h-12 outline-none">
+                                <option value="Outils">🛠️ Outils</option>
+                                <option value="Livres">📖 Livres</option>
+                                <option value="Composants électroniques" selected>⚡ Composants électroniques</option>
+                                <option value="Autre">Autre</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="text-xs uppercase tracking-widest mb-1 block">Quantité initiale</label>
+                            <input id="new-quantity" type="number" value="10" class="w-full bg-white/10 border border-white/10 rounded-2xl px-5 h-12 outline-none">
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="text-xs uppercase tracking-widest mb-1 block">Emplacement</label>
+                            <input id="new-location" type="text" value="Boîte C-07" class="w-full bg-white/10 border border-white/10 rounded-2xl px-5 h-12 outline-none">
+                        </div>
+                        <div>
+                            <label class="text-xs uppercase tracking-widest mb-1 block">Seuil d'alerte</label>
+                            <input id="new-threshold" type="number" value="5" class="w-full bg-white/10 border border-white/10 rounded-2xl px-5 h-12 outline-none">
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="text-xs uppercase tracking-widest mb-1 block">Description (optionnel)</label>
+                        <textarea id="new-desc" rows="2" class="w-full bg-white/10 border border-white/10 rounded-2xl px-5 py-3 outline-none resize-none"></textarea>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="flex border-t border-white/10">
+                <button onclick="hideAddModal()" class="flex-1 py-5 text-gray-400 font-medium hover:bg-white/5">Annuler</button>
+                <button onclick="addNewItem()" class="flex-1 py-5 bg-[#00d4ff] text-black font-semibold">Ajouter au stock</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL SCAN / TAP -->
+    <div onclick="if(event.target.id === 'scan-modal')hideScanModal()" id="scan-modal" class="hidden fixed inset-0 bg-black/90 backdrop-blur-2xl z-[10000] flex items-center justify-center">
+        <div onclick="event.stopImmediatePropagation()" class="text-center">
+            <div class="mx-auto w-80 h-80 border-4 border-[#00d4ff] border-dashed rounded-3xl flex flex-col items-center justify-center scan-animation mb-8">
+                <i class="fa-solid fa-barcode text-7xl text-[#00d4ff] mb-4"></i>
+                <p class="text-[#00d4ff] font-mono text-2xl tracking-[4px]">TAP &amp; TRACK</p>
+                <p class="text-xs text-gray-400 mt-6">Approchez votre téléphone ou scannez le code-barres</p>
+            </div>
+            
+            <input id="scan-input" 
+                   onkeydown="if(event.keyCode===13) handleScan()"
+                   type="text" 
+                   class="hidden" placeholder="Code-barres ou référence">
+            
+            <p class="text-sm text-gray-400">Ou tapez manuellement la référence</p>
+            <button onclick="simulateRealScan()" 
+                    class="mt-8 px-10 py-4 bg-white text-black rounded-3xl font-semibold flex items-center gap-x-3 mx-auto">
+                <i class="fa-solid fa-bolt"></i>
+                SIMULER UN TAP RÉEL
+            </button>
+            
+            <button onclick="hideScanModal()" class="mt-12 text-gray-400 text-sm">Fermer le scanner</button>
+        </div>
+    </div>
+
+    <!-- TOAST -->
+    <div id="toast" onclick="this.classList.add('hidden')" class="hidden fixed bottom-8 right-8 bg-emerald-400 text-black px-6 h-12 rounded-3xl flex items-center shadow-2xl">
+        <i class="fa-solid fa-check-circle mr-3"></i>
+        <span id="toast-text" class="font-medium"></span>
+    </div>
+
+    <script>
+        // ====================== BASE DE DONNÉES SIMULÉE (localStorage) ======================
+        let inventory = JSON.parse(localStorage.getItem('tapAndTrackDB')) || [
+            {
+                id: 1,
+                name: "Marteau de charpentier",
+                category: "Outils",
+                quantity: 12,
+                location: "Étagère A-03",
+                threshold: 4,
+                description: "Marteau 500g avec manche en fibre",
+                last_updated: "2026-03-24 14:22"
+            },
+            {
+                id: 2,
+                name: "Tournevis cruciforme Set",
+                category: "Outils",
+                quantity: 8,
+                location: "Étagère A-03",
+                threshold: 3,
+                description: "",
+                last_updated: "2026-03-25 09:15"
+            },
+            {
+                id: 3,
+                name: "Python pour les débutants",
+                category: "Livres",
+                quantity: 15,
+                location: "Bibliothèque B-02",
+                threshold: 5,
+                description: "Édition 2025",
+                last_updated: "2026-03-23 11:40"
+            },
+            {
+                id: 4,
+                name: "Résistance 10kΩ (pack 100)",
+                category: "Composants électroniques",
+                quantity: 87,
+                location: "Boîte C-12",
+                threshold: 20,
+                description: "",
+                last_updated: "2026-03-25 10:05"
+            },
+            {
+                id: 5,
+                name: "Condensateur 100µF",
+                category: "Composants électroniques",
+                quantity: 34,
+                location: "Boîte C-12",
+                threshold: 15,
+                description: "",
+                last_updated: "2026-03-24 18:30"
+            },
+            {
+                id: 6,
+                name: "Clé à molette ajustable 250mm",
+                category: "Outils",
+                quantity: 5,
+                location: "Étagère A-04",
+                threshold: 2,
+                description: "",
+                last_updated: "2026-03-25 08:10"
+            },
+            {
+                id: 7,
+                name: "Livre Arduino : Guide complet",
+                category: "Livres",
+                quantity: 3,
+                location: "Bibliothèque B-02",
+                threshold: 2,
+                description: "",
+                last_updated: "2026-03-22 16:45"
+            },
+            {
+                id: 8,
+                name: "LED RGB (pack 50)",
+                category: "Composants électroniques",
+                quantity: 142,
+                location: "Boîte C-07",
+                threshold: 30,
+                description: "",
+                last_updated: "2026-03-25 12:00"
+            }
+        ]
+
+        // Sauvegarde automatique
+        function saveDB() {
+            localStorage.setItem('tapAndTrackDB', JSON.stringify(inventory))
+            document.getElementById('last-sync').textContent = 'maintenant'
+            setTimeout(() => {
+                if (document.getElementById('last-sync')) {
+                    document.getElementById('last-sync').textContent = 'il y a 3 secondes'
+                }
+            }, 3000)
+        }
+
+        // ====================== RENDU DU TABLEAU ======================
+        function renderTable(filteredInventory) {
+            const tbody = document.getElementById('table-body')
+            tbody.innerHTML = ''
+
+            filteredInventory.forEach(item => {
+                const percent = Math.min(Math.max(Math.round((item.quantity / (item.threshold * 3)) * 100), 0), 100)
+                
+                const row = document.createElement('tr')
+                row.className = 'hover:bg-white/5 transition-colors group'
+                row.innerHTML = `
+                    <td class="px-8 py-5 font-medium">
+                        ${item.name}
+                        <div class="text-xs text-gray-400">${item.description ? item.description.substring(0, 35) : ''}</div>
+                    </td>
+                    <td class="px-8 py-5">
+                        <span class="inline-flex items-center gap-x-1.5 text-xs font-medium px-3 h-6 rounded-3xl
+                            ${item.category === 'Outils' ? 'bg-amber-400/10 text-amber-400' : ''}
+                            ${item.category === 'Livres' ? 'bg-purple-400/10 text-purple-400' : ''}
+                            ${item.category === 'Composants électroniques' ? 'bg-cyan-400/10 text-cyan-400' : ''}
+                            ${item.category === 'Autre' ? 'bg-gray-400/10 text-gray-400' : ''}">
+                            ${item.category}
+                        </span>
+                    </td>
+                    <td class="px-8 py-5">
+                        <div class="flex items-center gap-x-3">
+                            <span class="text-2xl font-semibold">${item.quantity}</span>
+                            <div class="flex-1">
+                                <div class="stock-bar" style="--stock-level: ${percent}%"></div>
+                                ${item.quantity <= item.threshold ? `<span class="text-orange-400 text-xs mt-1 flex items-center"><i class="fa-solid fa-triangle-exclamation mr-1"></i>Stock bas</span>` : ''}
+                            </div>
+                        </div>
+                    </td>
+                    <td class="px-8 py-5 text-gray-400">${item.location}</td>
+                    <td class="px-8 py-5 text-gray-400">${item.threshold}</td>
+                    <td class="px-8 py-5 text-right">
+                        <div class="flex justify-end gap-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button onclick="tapItem(${item.id}, 1)" 
+                                    class="tap-btn w-9 h-9 bg-[#00d4ff] hover:bg-[#00b8e0] text-black rounded-2xl flex items-center justify-center">
+                                <i class="fa-solid fa-plus text-lg"></i>
+                            </button>
+                            <button onclick="tapItem(${item.id}, -1)" 
+                                    class="tap-btn w-9 h-9 bg-white/10 hover:bg-white/20 rounded-2xl flex items-center justify-center">
+                                <i class="fa-solid fa-minus text-lg"></i>
+                            </button>
+                            <button onclick="deleteItem(${item.id})" 
+                                    class="tap-btn w-9 h-9 text-red-400 hover:bg-red-400/10 rounded-2xl flex items-center justify-center">
+                                <i class="fa-solid fa-trash"></i>
+                            </button>
+                        </div>
+                    </td>
+                `
+                tbody.appendChild(row)
+            })
+
+            if (filteredInventory.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="px-8 py-16 text-center text-gray-400">Aucun article trouvé… Essayez une autre recherche</td></tr>`
+            }
+        }
+
+        // ====================== ACTIONS TAP ======================
+        function tapItem(id, delta) {
+            const item = inventory.find(i => i.id === id)
+            if (!item) return
+            
+            item.quantity = Math.max(0, item.quantity + delta)
+            item.last_updated = new Date().toISOString().slice(0, 16).replace('T', ' ')
+            
+            // Animation toast
+            showToast(delta > 0 ? `+\( {delta} ajouté` : ` \){delta} retiré`, delta > 0 ? 'emerald' : 'orange')
+            
+            saveDB()
+            filterTable() // refresh
+            updateGlobalStats()
+        }
+
+        function deleteItem(id) {
+            if (!confirm('Supprimer cet article définitivement ?')) return
+            inventory = inventory.filter(i => i.id !== id)
+            saveDB()
+            filterTable()
+            updateGlobalStats()
+            showToast('Article supprimé', 'red')
+        }
+
+        // ====================== AJOUT D'ARTICLE ======================
+        function showAddModal() {
+            document.getElementById('add-modal').classList.remove('hidden')
+            document.getElementById('add-modal').classList.add('flex')
+        }
+        
+        function hideAddModal() {
+            const modal = document.getElementById('add-modal')
+            modal.classList.add('hidden')
+            modal.classList.remove('flex')
+        }
+        
+        function addNewItem() {
+            const name = document.getElementById('new-name').value.trim()
+            if (!name) return alert("Le nom est obligatoire !")
+            
+            const newItem = {
+                id: Date.now(),
+                name: name,
+                category: document.getElementById('new-category').value,
+                quantity: parseInt(document.getElementById('new-quantity').value) || 0,
+                location: document.getElementById('new-location').value || 'Non défini',
+                threshold: parseInt(document.getElementById('new-threshold').value) || 5,
+                description: document.getElementById('new-desc').value,
+                last_updated: new Date().toISOString().slice(0, 16).replace('T', ' ')
+            }
+            
+            inventory.unshift(newItem)
+            saveDB()
+            hideAddModal()
+            filterTable()
+            updateGlobalStats()
+            showToast('Article ajouté avec succès !', 'emerald')
+            
+            // Reset fields
+            document.getElementById('new-name').value = ''
+            document.getElementById('new-quantity').value = '10'
+        }
+
+        // ====================== SCAN SIMULÉ ======================
+        function simulateScan() {
+            document.getElementById('scan-modal').classList.remove('hidden')
+            document.getElementById('scan-modal').classList.add('flex')
+            setTimeout(() => {
+                document.getElementById('scan-input').focus()
+            }, 300)
+        }
+        
+        function hideScanModal() {
+            const modal = document.getElementById('scan-modal')
+            modal.classList.add('hidden')
+            modal.classList.remove('flex')
+        }
+        
+        function simulateRealScan() {
+            hideScanModal()
+            // Simulation de scan réussi
+            setTimeout(() => {
+                const randomItem = inventory[Math.floor(Math.random() * inventory.length)]
+                tapItem(randomItem.id, 1)
+                showToast(`✅ Scanné : ${randomItem.name} (+1)`, 'emerald')
+            }, 800)
+        }
+        
+        function handleScan() {
+            const code = document.getElementById('scan-input').value.trim().toLowerCase()
+            hideScanModal()
+            
+            const found = inventory.find(item => 
+                item.name.toLowerCase().includes(code) || 
+                item.description.toLowerCase().includes(code)
+            )
+            
+            if (found) {
+                tapItem(found.id, 1)
+                showToast(`Scanné : ${found.name}`, 'emerald')
+            } else {
+                showToast('Aucun article trouvé avec ce code', 'orange')
+            }
+        }
+
+        // ====================== FILTRES & RECHERCHE ======================
+        function filterTable() {
+            let filtered = [...inventory]
+            
+            // Recherche texte
+            const searchTerm = document.getElementById('search-input').value.toLowerCase().trim()
+            if (searchTerm) {
+                filtered = filtered.filter(item => 
+                    item.name.toLowerCase().includes(searchTerm) ||
+                    (item.description && item.description.toLowerCase().includes(searchTerm)) ||
+                    item.location.toLowerCase().includes(searchTerm)
+                )
+            }
+            
+            // Filtre stock bas
+            const onlyLowStock = document.getElementById('low-stock-filter').classList.contains('!bg-orange-400/20')
+            if (onlyLowStock) {
+                filtered = filtered.filter(item => item.quantity <= item.threshold)
+            }
+            
+            // Tri
+            const sortMode = document.getElementById('sort-select').value
+            if (sortMode === 'quantity') {
+                filtered.sort((a, b) => b.quantity - a.quantity)
+            } else if (sortMode === 'last_updated') {
+                filtered.sort((a, b) => new Date(b.last_updated) - new Date(a.last_updated))
+            } else {
+                filtered.sort((a, b) => a.name.localeCompare(b.name))
+            }
+            
+            renderTable(filtered)
+        }
+        
+        function filterByCategory(cat) {
+            // Désactive tous les onglets
+            document.querySelectorAll('.category-tab').forEach(el => el.classList.remove('bg-white/10'))
+            
+            if (cat === 'all') {
+                document.getElementById('cat-all').classList.add('bg-white/10')
+                document.getElementById('search-input').value = ''
+            } else {
+                document.getElementById('cat-' + cat.toLowerCase().replace('é', 'e').replace(' ', '-')).classList.add('bg-white/10')
+                document.getElementById('search-input').value = cat
+            }
+            filterTable()
+        }
+        
+        function toggleLowStock() {
+            const btn = document.getElementById('low-stock-filter')
+            btn.classList.toggle('!bg-orange-400/20')
+            btn.classList.toggle('!text-white')
+            filterTable()
+        }
+
+        // ====================== STATS GLOBALES ======================
+        function updateGlobalStats() {
+            const totalItems = inventory.length
+            const totalStock = inventory.reduce((sum, i) => sum + i.quantity, 0)
+            const lowStock = inventory.filter(i => i.quantity <= i.threshold).length
+            
+            document.getElementById('total-items').textContent = totalItems
+            document.getElementById('total-stock').textContent = totalStock
+            document.getElementById('low-stock-count').innerHTML = `${lowStock} <span class="text-xs text-orange-400 ml-1">⚠️</span>`
+            
+            // Mise à jour des compteurs catégories
+            const counts = {
+                all: totalItems,
+                Outils: inventory.filter(i => i.category === 'Outils').length,
+                Livres: inventory.filter(i => i.category === 'Livres').length,
+                'Composants électroniques': inventory.filter(i => i.category === 'Composants électroniques').length
+            }
+            
+            document.getElementById('count-all').textContent = counts.all
+            document.getElementById('count-outils').textContent = counts.Outils
+            document.getElementById('count-livres').textContent = counts.Livres
+            document.getElementById('count-composants').textContent = counts['Composants électroniques']
+        }
+
+        function showStatsModal() {
+            alert('📊 Statistiques détaillées :\n\n' +
+                  '• Valeur estimée du stock : 2 847 €\n' +
+                  '• Articles en rotation rapide : 7\n' +
+                  '• Dernier mouvement : Résistance 10kΩ (+12 il y a 27 min)\n\n' +
+                  'Tout est synchronisé en temps réel !')
+        }
+
+        // ====================== EXPORT CSV ======================
+        function exportCSV() {
+            let csv = "ID,Nom,Catégorie,Quantité,Emplacement,Seuil,Description,Dernière mise à jour\n"
+            
+            inventory.forEach(item => {
+                csv += `\( {item.id}," \){item.name}",\( {item.category}, \){item.quantity},"\( {item.location}", \){item.threshold},"\( {item.description || ''}", \){item.last_updated}\n`
+            })
+            
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+            const link = document.createElement('a')
+            link.href = URL.createObjectURL(blob)
+            link.download = `Tap_Track_Export_${new Date().toISOString().slice(0,10)}.csv`
+            link.click()
+            showToast('✅ Export CSV téléchargé', 'emerald')
+        }
+
+        function showToast(text, color) {
+            const toast = document.getElementById('toast')
+            const textEl = document.getElementById('toast-text')
+            textEl.textContent = text
+            toast.style.backgroundColor = color === 'emerald' ? '#00d4ff' : color === 'orange' ? '#f59e0b' : '#ef4444'
+            toast.style.color = color === 'emerald' ? '#000' : '#fff'
+            toast.classList.remove('hidden')
+            toast.style.transform = 'translateY(0)'
+            
+            setTimeout(() => {
+                toast.style.transform = 'translateY(100px)'
+                setTimeout(() => toast.classList.add('hidden'), 400)
+            }, 2800)
+        }
+
+        // ====================== INITIALISATION ======================
+        function init() {
+            updateGlobalStats()
+            renderTable(inventory)
+            
+            // Raccourci clavier CTRL + K = scanner
+            document.addEventListener('keydown', function(e) {
+                if (e.ctrlKey && e.key === 'k') {
+                    e.preventDefault()
+                    simulateScan()
+                }
+            })
+            
+            console.log('%c✅ Tap & Track prêt ! 🎉', 'background:#00d4ff;color:#000;padding:2px 6px;border-radius:4px;font-weight:bold')
+            console.log('Tu peux maintenant ajouter, scanner, tapper +1 / -1. Tout est sauvegardé dans le navigateur.')
+        }
+        
+        window.onload = init
+    </script>
+</body>
+</html>
