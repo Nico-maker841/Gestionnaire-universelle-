@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tap &amp; Track • Gestionnaire d'Inventaire</title>
+    <title>Tap &amp; Track • Gestionnaire d'Inventaire NFC</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
@@ -19,12 +19,12 @@
             transform: scale(0.95);
             box-shadow: 0 0 0 8px rgba(0, 212, 255, 0.3);
         }
-        .scan-animation {
-            animation: scanPulse 2s infinite;
+        .nfc-animation {
+            animation: nfcPulse 1.5s infinite ease-in-out;
         }
-        @keyframes scanPulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.4; }
+        @keyframes nfcPulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.15); opacity: 0.7; }
         }
         .stock-bar {
             height: 8px;
@@ -41,7 +41,13 @@
                 <div class="w-10 h-10 bg-[#00d4ff] text-black rounded-2xl flex items-center justify-center text-2xl font-bold">📟</div>
                 <div>
                     <h1 class="text-3xl font-semibold tracking-tight">Tap &amp; Track</h1>
-                    <p class="text-xs text-emerald-400 -mt-1">Stock de matériel en temps réel</p>
+                    <p class="text-xs text-emerald-400 -mt-1 flex items-center gap-1">
+                        <span class="relative flex h-2 w-2">
+                            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                            <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-400"></span>
+                        </span>
+                        NFC • Temps réel
+                    </p>
                 </div>
             </div>
             
@@ -64,9 +70,19 @@
                     </div>
                 </div>
 
-                <div class="flex items-center gap-x-2 bg-white/10 hover:bg-white/20 px-5 h-11 rounded-3xl cursor-pointer transition-colors" onclick="simulateScan()">
+                <!-- Bouton NFC principal -->
+                <div onclick="startNFCTap()" 
+                     class="flex items-center gap-x-3 bg-gradient-to-r from-[#00d4ff] to-cyan-400 hover:brightness-110 text-black font-semibold px-6 h-12 rounded-3xl cursor-pointer transition-all tap-btn">
+                    <i class="fa-solid fa-nfc-symbol text-2xl"></i>
+                    <div>
+                        <span class="text-lg">TAP NFC</span>
+                        <span class="block text-xs -mt-1 opacity-75">Approchez le tag</span>
+                    </div>
+                </div>
+
+                <div onclick="simulateScan()" class="flex items-center gap-x-2 bg-white/10 hover:bg-white/20 px-5 h-11 rounded-3xl cursor-pointer transition-colors">
                     <i class="fa-solid fa-barcode text-[#00d4ff]"></i>
-                    <span class="font-medium">Scanner / Tap</span>
+                    <span class="font-medium">Scanner code-barres</span>
                     <span class="text-xs bg-[#00d4ff] text-black px-2.5 py-0.5 rounded-2xl font-bold">CTRL + K</span>
                 </div>
 
@@ -114,11 +130,10 @@
 
                 <div class="h-px bg-white/10 my-6"></div>
                 
-                <!-- Actions rapides -->
                 <button onclick="showAddModal()" 
                         class="w-full h-12 bg-[#00d4ff] hover:bg-[#00b8e0] text-black font-semibold rounded-3xl flex items-center justify-center gap-x-3 text-lg mb-3">
                     <i class="fa-solid fa-plus"></i>
-                    <span>Ajouter un article</span>
+                    <span>Ajouter un article + NFC</span>
                 </button>
                 
                 <button onclick="exportCSV()" 
@@ -126,6 +141,11 @@
                     <i class="fa-solid fa-file-export"></i>
                     <span>Exporter en CSV</span>
                 </button>
+                
+                <div class="text-[10px] text-gray-400 mt-6 px-2 text-center">
+                    NFC prêt • Web NFC API activée<br>
+                    <span class="text-emerald-400" id="nfc-status">✅ Supporté sur ce navigateur</span>
+                </div>
             </div>
         </div>
 
@@ -140,7 +160,7 @@
                         id="search-input"
                         onkeyup="if(event.keyCode===13) filterTable()"
                         type="text" 
-                        placeholder="Rechercher un outil, livre, composant… (ex: résistance, marteau)"
+                        placeholder="Rechercher… ou tapez un tag NFC"
                         class="w-full bg-white/10 border border-white/10 focus:border-[#00d4ff] rounded-3xl h-12 pl-12 pr-6 text-white placeholder-gray-400 outline-none">
                 </div>
                 
@@ -166,7 +186,7 @@
                             <th class="text-left py-5 px-8">Catégorie</th>
                             <th class="text-left py-5 px-8">Quantité</th>
                             <th class="text-left py-5 px-8">Emplacement</th>
-                            <th class="text-left py-5 px-8">Seuil d'alerte</th>
+                            <th class="text-left py-5 px-8">Tag NFC</th>
                             <th class="text-right py-5 px-8">Actions Tap</th>
                         </tr>
                     </thead>
@@ -174,15 +194,15 @@
                 </table>
             </div>
 
-            <p class="text-xs text-center text-gray-500 mt-6">Données sauvegardées automatiquement • Dernière mise à jour il y a <span id="last-sync" class="font-medium text-emerald-400">8 secondes</span></p>
+            <p class="text-xs text-center text-gray-500 mt-6">Sauvegarde auto • NFC synchronisé en direct • Dernière mise à jour <span id="last-sync" class="font-medium text-emerald-400">maintenant</span></p>
         </div>
     </div>
 
-    <!-- MODAL AJOUT -->
+    <!-- MODAL AJOUT (avec génération NFC) -->
     <div onclick="if(event.target.id === 'add-modal')hideAddModal()" id="add-modal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-xl z-[9999] flex items-center justify-center">
         <div onclick="event.stopImmediatePropagation()" class="bg-gray-900 rounded-3xl max-w-md w-full mx-4 overflow-hidden">
             <div class="px-8 pt-8 pb-6">
-                <h2 class="text-2xl font-semibold mb-6">Nouvel article • Tap &amp; Track</h2>
+                <h2 class="text-2xl font-semibold mb-6">Nouvel article + Tag NFC</h2>
                 
                 <div class="space-y-6">
                     <div>
@@ -217,42 +237,44 @@
                         </div>
                     </div>
                     
-                    <div>
-                        <label class="text-xs uppercase tracking-widest mb-1 block">Description (optionnel)</label>
-                        <textarea id="new-desc" rows="2" class="w-full bg-white/10 border border-white/10 rounded-2xl px-5 py-3 outline-none resize-none"></textarea>
+                    <div class="bg-white/10 rounded-2xl p-4 text-xs">
+                        <div class="flex justify-between mb-2"><span>Tag NFC généré automatiquement :</span><span id="generated-nfc" class="font-mono text-[#00d4ff]">taptrack-174318XXXX</span></div>
+                        <p class="text-gray-400">Collez ce tag sur l'article. Le prochain TAP NFC l'identifiera instantanément.</p>
                     </div>
                 </div>
             </div>
             
             <div class="flex border-t border-white/10">
                 <button onclick="hideAddModal()" class="flex-1 py-5 text-gray-400 font-medium hover:bg-white/5">Annuler</button>
-                <button onclick="addNewItem()" class="flex-1 py-5 bg-[#00d4ff] text-black font-semibold">Ajouter au stock</button>
+                <button onclick="addNewItem()" class="flex-1 py-5 bg-[#00d4ff] text-black font-semibold">Créer + générer NFC</button>
             </div>
         </div>
     </div>
 
-    <!-- MODAL SCAN / TAP -->
-    <div onclick="if(event.target.id === 'scan-modal')hideScanModal()" id="scan-modal" class="hidden fixed inset-0 bg-black/90 backdrop-blur-2xl z-[10000] flex items-center justify-center">
-        <div onclick="event.stopImmediatePropagation()" class="text-center">
-            <div class="mx-auto w-80 h-80 border-4 border-[#00d4ff] border-dashed rounded-3xl flex flex-col items-center justify-center scan-animation mb-8">
-                <i class="fa-solid fa-barcode text-7xl text-[#00d4ff] mb-4"></i>
-                <p class="text-[#00d4ff] font-mono text-2xl tracking-[4px]">TAP &amp; TRACK</p>
-                <p class="text-xs text-gray-400 mt-6">Approchez votre téléphone ou scannez le code-barres</p>
+    <!-- MODAL NFC EN COURS -->
+    <div onclick="if(event.target.id === 'nfc-modal')hideNFCModal()" id="nfc-modal" class="hidden fixed inset-0 bg-black/90 backdrop-blur-2xl z-[10000] flex items-center justify-center">
+        <div onclick="event.stopImmediatePropagation()" class="text-center max-w-xs">
+            <div class="mx-auto w-40 h-40 border-8 border-[#00d4ff] border-dashed rounded-3xl flex flex-col items-center justify-center nfc-animation mb-8">
+                <i class="fa-solid fa-nfc-symbol text-8xl text-[#00d4ff]"></i>
             </div>
+            <h3 class="text-2xl font-semibold mb-2">En attente du tag NFC…</h3>
+            <p class="text-gray-400 mb-8">Approchez votre téléphone ou tag près du lecteur</p>
             
-            <input id="scan-input" 
-                   onkeydown="if(event.keyCode===13) handleScan()"
-                   type="text" 
-                   class="hidden" placeholder="Code-barres ou référence">
+            <div id="nfc-result" class="hidden text-emerald-400 font-medium"></div>
             
-            <p class="text-sm text-gray-400">Ou tapez manuellement la référence</p>
-            <button onclick="simulateRealScan()" 
-                    class="mt-8 px-10 py-4 bg-white text-black rounded-3xl font-semibold flex items-center gap-x-3 mx-auto">
-                <i class="fa-solid fa-bolt"></i>
-                SIMULER UN TAP RÉEL
+            <button onclick="simulateNFCRead()" 
+                    class="mt-6 px-8 py-3 bg-white/10 hover:bg-white/20 rounded-3xl text-sm flex items-center gap-2 mx-auto">
+                <i class="fa-solid fa-wand-magic-sparkles"></i>
+                SIMULER UN TAP NFC (démo)
             </button>
             
-            <button onclick="hideScanModal()" class="mt-12 text-gray-400 text-sm">Fermer le scanner</button>
+            <button onclick="hideNFCModal()" class="mt-10 text-gray-400 text-sm flex items-center mx-auto gap-1">
+                <i class="fa-solid fa-xmark"></i> Fermer le scanner NFC
+            </button>
+            
+            <div class="text-[10px] text-gray-500 mt-8">
+                Web NFC API • Android Chrome uniquement pour usage réel
+            </div>
         </div>
     </div>
 
@@ -263,8 +285,8 @@
     </div>
 
     <script>
-        // ====================== BASE DE DONNÉES SIMULÉE (localStorage) ======================
-        let inventory = JSON.parse(localStorage.getItem('tapAndTrackDB')) || [
+        // ====================== BASE DE DONNÉES AVEC NFC ======================
+        let inventory = JSON.parse(localStorage.getItem('tapAndTrackDB_NFC')) || [
             {
                 id: 1,
                 name: "Marteau de charpentier",
@@ -272,7 +294,8 @@
                 quantity: 12,
                 location: "Étagère A-03",
                 threshold: 4,
-                description: "Marteau 500g avec manche en fibre",
+                description: "Marteau 500g",
+                nfcId: "taptrack-001",
                 last_updated: "2026-03-24 14:22"
             },
             {
@@ -283,6 +306,7 @@
                 location: "Étagère A-03",
                 threshold: 3,
                 description: "",
+                nfcId: "taptrack-002",
                 last_updated: "2026-03-25 09:15"
             },
             {
@@ -293,6 +317,7 @@
                 location: "Bibliothèque B-02",
                 threshold: 5,
                 description: "Édition 2025",
+                nfcId: "taptrack-003",
                 last_updated: "2026-03-23 11:40"
             },
             {
@@ -303,6 +328,7 @@
                 location: "Boîte C-12",
                 threshold: 20,
                 description: "",
+                nfcId: "taptrack-004",
                 last_updated: "2026-03-25 10:05"
             },
             {
@@ -313,6 +339,7 @@
                 location: "Boîte C-12",
                 threshold: 15,
                 description: "",
+                nfcId: "taptrack-005",
                 last_updated: "2026-03-24 18:30"
             },
             {
@@ -323,6 +350,7 @@
                 location: "Étagère A-04",
                 threshold: 2,
                 description: "",
+                nfcId: "taptrack-006",
                 last_updated: "2026-03-25 08:10"
             },
             {
@@ -333,6 +361,7 @@
                 location: "Bibliothèque B-02",
                 threshold: 2,
                 description: "",
+                nfcId: "taptrack-007",
                 last_updated: "2026-03-22 16:45"
             },
             {
@@ -343,22 +372,23 @@
                 location: "Boîte C-07",
                 threshold: 30,
                 description: "",
+                nfcId: "taptrack-008",
                 last_updated: "2026-03-25 12:00"
             }
         ]
 
-        // Sauvegarde automatique
+        let nfcReader = null
+        let isNFCSupported = 'NDEFReader' in window
+
         function saveDB() {
-            localStorage.setItem('tapAndTrackDB', JSON.stringify(inventory))
+            localStorage.setItem('tapAndTrackDB_NFC', JSON.stringify(inventory))
             document.getElementById('last-sync').textContent = 'maintenant'
             setTimeout(() => {
-                if (document.getElementById('last-sync')) {
-                    document.getElementById('last-sync').textContent = 'il y a 3 secondes'
-                }
-            }, 3000)
+                document.getElementById('last-sync').textContent = 'il y a 2s'
+            }, 2500)
         }
 
-        // ====================== RENDU DU TABLEAU ======================
+        // ====================== RENDU TABLEAU (avec colonne NFC) ======================
         function renderTable(filteredInventory) {
             const tbody = document.getElementById('table-body')
             tbody.innerHTML = ''
@@ -377,8 +407,7 @@
                         <span class="inline-flex items-center gap-x-1.5 text-xs font-medium px-3 h-6 rounded-3xl
                             ${item.category === 'Outils' ? 'bg-amber-400/10 text-amber-400' : ''}
                             ${item.category === 'Livres' ? 'bg-purple-400/10 text-purple-400' : ''}
-                            ${item.category === 'Composants électroniques' ? 'bg-cyan-400/10 text-cyan-400' : ''}
-                            ${item.category === 'Autre' ? 'bg-gray-400/10 text-gray-400' : ''}">
+                            ${item.category === 'Composants électroniques' ? 'bg-cyan-400/10 text-cyan-400' : ''}">
                             ${item.category}
                         </span>
                     </td>
@@ -392,21 +421,12 @@
                         </div>
                     </td>
                     <td class="px-8 py-5 text-gray-400">${item.location}</td>
-                    <td class="px-8 py-5 text-gray-400">${item.threshold}</td>
+                    <td class="px-8 py-5 font-mono text-xs text-[#00d4ff]">${item.nfcId}</td>
                     <td class="px-8 py-5 text-right">
                         <div class="flex justify-end gap-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button onclick="tapItem(${item.id}, 1)" 
-                                    class="tap-btn w-9 h-9 bg-[#00d4ff] hover:bg-[#00b8e0] text-black rounded-2xl flex items-center justify-center">
-                                <i class="fa-solid fa-plus text-lg"></i>
-                            </button>
-                            <button onclick="tapItem(${item.id}, -1)" 
-                                    class="tap-btn w-9 h-9 bg-white/10 hover:bg-white/20 rounded-2xl flex items-center justify-center">
-                                <i class="fa-solid fa-minus text-lg"></i>
-                            </button>
-                            <button onclick="deleteItem(${item.id})" 
-                                    class="tap-btn w-9 h-9 text-red-400 hover:bg-red-400/10 rounded-2xl flex items-center justify-center">
-                                <i class="fa-solid fa-trash"></i>
-                            </button>
+                            <button onclick="tapItem(${item.id}, 1)" class="tap-btn w-9 h-9 bg-[#00d4ff] text-black rounded-2xl flex items-center justify-center"><i class="fa-solid fa-plus"></i></button>
+                            <button onclick="tapItem(${item.id}, -1)" class="tap-btn w-9 h-9 bg-white/10 rounded-2xl flex items-center justify-center"><i class="fa-solid fa-minus"></i></button>
+                            <button onclick="deleteItem(${item.id})" class="tap-btn w-9 h-9 text-red-400 hover:bg-red-400/10 rounded-2xl flex items-center justify-center"><i class="fa-solid fa-trash"></i></button>
                         </div>
                     </td>
                 `
@@ -414,50 +434,136 @@
             })
 
             if (filteredInventory.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="6" class="px-8 py-16 text-center text-gray-400">Aucun article trouvé… Essayez une autre recherche</td></tr>`
+                tbody.innerHTML = `<tr><td colspan="6" class="px-8 py-16 text-center text-gray-400">Aucun article trouvé…</td></tr>`
             }
         }
 
-        // ====================== ACTIONS TAP ======================
+        // ====================== TAP CLASSIQUE ======================
         function tapItem(id, delta) {
             const item = inventory.find(i => i.id === id)
             if (!item) return
-            
             item.quantity = Math.max(0, item.quantity + delta)
             item.last_updated = new Date().toISOString().slice(0, 16).replace('T', ' ')
-            
-            // Animation toast
-            showToast(delta > 0 ? `+\( {delta} ajouté` : ` \){delta} retiré`, delta > 0 ? 'emerald' : 'orange')
-            
             saveDB()
-            filterTable() // refresh
+            filterTable()
             updateGlobalStats()
+            showToast(delta > 0 ? `+\( {delta} via TAP` : ` \){delta} retiré`, delta > 0 ? 'emerald' : 'orange')
         }
 
         function deleteItem(id) {
-            if (!confirm('Supprimer cet article définitivement ?')) return
+            if (!confirm('Supprimer cet article et son tag NFC ?')) return
             inventory = inventory.filter(i => i.id !== id)
             saveDB()
             filterTable()
             updateGlobalStats()
-            showToast('Article supprimé', 'red')
         }
 
-        // ====================== AJOUT D'ARTICLE ======================
+        // ====================== NFC RÉEL (Web NFC API) ======================
+        async function startNFCTap() {
+            document.getElementById('nfc-modal').classList.remove('hidden')
+            document.getElementById('nfc-modal').classList.add('flex')
+            document.getElementById('nfc-result').classList.add('hidden')
+
+            if (!isNFCSupported) {
+                document.getElementById('nfc-result').innerHTML = `❌ Web NFC non supporté sur ce navigateur.<br>Utilisez la simulation ci-dessous.`
+                document.getElementById('nfc-result').classList.remove('hidden')
+                return
+            }
+
+            try {
+                if (!nfcReader) {
+                    nfcReader = new NDEFReader()
+                    await nfcReader.scan()
+                    
+                    nfcReader.addEventListener('reading', event => {
+                        handleNFCReading(event)
+                    })
+                    
+                    nfcReader.addEventListener('readingerror', () => {
+                        showToast('Erreur de lecture NFC – essayez de rapprocher le tag', 'orange')
+                    })
+                }
+                
+                showToast('Scanner NFC activé • Approchez un tag !', 'emerald')
+            } catch (err) {
+                console.error(err)
+                showToast('Impossible d’activer le NFC (permissions ou HTTPS requis)', 'red')
+            }
+        }
+
+        function handleNFCReading(event) {
+            hideNFCModal()
+            
+            const record = event.message.records.find(r => r.recordType === 'text')
+            if (!record) {
+                showToast('Tag NFC vide ou non compatible', 'orange')
+                return
+            }
+            
+            const decoder = new TextDecoder()
+            const nfcData = decoder.decode(record.data).trim()
+            
+            // Recherche par nfcId
+            const item = inventory.find(i => i.nfcId === nfcData)
+            
+            if (item) {
+                tapItem(item.id, 1)
+                showToast(`✅ NFC lu : +1 ${item.name}`, 'emerald')
+            } else {
+                showToast(`Tag NFC inconnu : ${nfcData}`, 'orange')
+                // Option : proposer d’ajouter un nouvel article avec ce tag
+                if (confirm(`Tag inconnu "${nfcData}"\nVoulez-vous créer un nouvel article avec ce tag NFC ?`)) {
+                    showAddModalWithNFC(nfcData)
+                }
+            }
+        }
+
+        function hideNFCModal() {
+            const modal = document.getElementById('nfc-modal')
+            modal.classList.add('hidden')
+            modal.classList.remove('flex')
+        }
+
+        // ====================== SIMULATION NFC (fonctionne partout) ======================
+        function simulateNFCRead() {
+            hideNFCModal()
+            setTimeout(() => {
+                const randomItem = inventory[Math.floor(Math.random() * inventory.length)]
+                // On simule la lecture du vrai nfcId
+                const fakeEvent = { message: { records: [{ recordType: 'text', data: new TextEncoder().encode(randomItem.nfcId) }] } }
+                handleNFCReading(fakeEvent)
+            }, 1200)
+        }
+
+        // ====================== AJOUT ARTICLE (génère NFC) ======================
         function showAddModal() {
             document.getElementById('add-modal').classList.remove('hidden')
             document.getElementById('add-modal').classList.add('flex')
+            const nfcCode = `taptrack-${Date.now().toString().slice(-8)}`
+            document.getElementById('generated-nfc').textContent = nfcCode
+            window.tempNFCCode = nfcCode // pour le récupérer dans addNewItem
         }
-        
+
+        function showAddModalWithNFC(predefinedNFC) {
+            hideNFCModal()
+            showAddModal()
+            // On force le code NFC déjà lu
+            setTimeout(() => {
+                document.getElementById('generated-nfc').textContent = predefinedNFC
+                window.tempNFCCode = predefinedNFC
+            }, 300)
+        }
+
         function hideAddModal() {
             const modal = document.getElementById('add-modal')
             modal.classList.add('hidden')
             modal.classList.remove('flex')
+            window.tempNFCCode = null
         }
-        
+
         function addNewItem() {
             const name = document.getElementById('new-name').value.trim()
-            if (!name) return alert("Le nom est obligatoire !")
+            if (!name) return alert("Nom obligatoire !")
             
             const newItem = {
                 id: Date.now(),
@@ -466,7 +572,8 @@
                 quantity: parseInt(document.getElementById('new-quantity').value) || 0,
                 location: document.getElementById('new-location').value || 'Non défini',
                 threshold: parseInt(document.getElementById('new-threshold').value) || 5,
-                description: document.getElementById('new-desc').value,
+                description: '',
+                nfcId: window.tempNFCCode || `taptrack-${Date.now().toString().slice(-8)}`,
                 last_updated: new Date().toISOString().slice(0, 16).replace('T', ' ')
             }
             
@@ -475,102 +582,59 @@
             hideAddModal()
             filterTable()
             updateGlobalStats()
-            showToast('Article ajouté avec succès !', 'emerald')
-            
-            // Reset fields
-            document.getElementById('new-name').value = ''
-            document.getElementById('new-quantity').value = '10'
+            showToast(`Article créé avec tag NFC ${newItem.nfcId} !`, 'emerald')
         }
 
-        // ====================== SCAN SIMULÉ ======================
+        // ====================== SCAN BARCODE (ancien) ======================
         function simulateScan() {
-            document.getElementById('scan-modal').classList.remove('hidden')
-            document.getElementById('scan-modal').classList.add('flex')
-            setTimeout(() => {
-                document.getElementById('scan-input').focus()
-            }, 300)
-        }
-        
-        function hideScanModal() {
-            const modal = document.getElementById('scan-modal')
-            modal.classList.add('hidden')
-            modal.classList.remove('flex')
-        }
-        
-        function simulateRealScan() {
-            hideScanModal()
-            // Simulation de scan réussi
-            setTimeout(() => {
-                const randomItem = inventory[Math.floor(Math.random() * inventory.length)]
-                tapItem(randomItem.id, 1)
-                showToast(`✅ Scanné : ${randomItem.name} (+1)`, 'emerald')
-            }, 800)
-        }
-        
-        function handleScan() {
-            const code = document.getElementById('scan-input').value.trim().toLowerCase()
-            hideScanModal()
-            
-            const found = inventory.find(item => 
-                item.name.toLowerCase().includes(code) || 
-                item.description.toLowerCase().includes(code)
-            )
-            
-            if (found) {
-                tapItem(found.id, 1)
-                showToast(`Scanné : ${found.name}`, 'emerald')
+            const code = prompt("🔍 Code-barres ou référence NFC à simuler ?")
+            if (!code) return
+            const item = inventory.find(i => i.name.toLowerCase().includes(code.toLowerCase()) || i.nfcId === code)
+            if (item) {
+                tapItem(item.id, 1)
             } else {
-                showToast('Aucun article trouvé avec ce code', 'orange')
+                showToast('Aucun article trouvé', 'orange')
             }
         }
 
-        // ====================== FILTRES & RECHERCHE ======================
+        // ====================== FILTRES ======================
         function filterTable() {
             let filtered = [...inventory]
-            
-            // Recherche texte
             const searchTerm = document.getElementById('search-input').value.toLowerCase().trim()
+            
             if (searchTerm) {
                 filtered = filtered.filter(item => 
                     item.name.toLowerCase().includes(searchTerm) ||
-                    (item.description && item.description.toLowerCase().includes(searchTerm)) ||
+                    item.nfcId.toLowerCase().includes(searchTerm) ||
                     item.location.toLowerCase().includes(searchTerm)
                 )
             }
             
-            // Filtre stock bas
-            const onlyLowStock = document.getElementById('low-stock-filter').classList.contains('!bg-orange-400/20')
-            if (onlyLowStock) {
+            if (document.getElementById('low-stock-filter').classList.contains('!bg-orange-400/20')) {
                 filtered = filtered.filter(item => item.quantity <= item.threshold)
             }
             
-            // Tri
             const sortMode = document.getElementById('sort-select').value
-            if (sortMode === 'quantity') {
-                filtered.sort((a, b) => b.quantity - a.quantity)
-            } else if (sortMode === 'last_updated') {
-                filtered.sort((a, b) => new Date(b.last_updated) - new Date(a.last_updated))
-            } else {
-                filtered.sort((a, b) => a.name.localeCompare(b.name))
-            }
+            if (sortMode === 'quantity') filtered.sort((a, b) => b.quantity - a.quantity)
+            else if (sortMode === 'last_updated') filtered.sort((a, b) => new Date(b.last_updated) - new Date(a.last_updated))
+            else filtered.sort((a, b) => a.name.localeCompare(b.name))
             
             renderTable(filtered)
         }
-        
+
         function filterByCategory(cat) {
-            // Désactive tous les onglets
             document.querySelectorAll('.category-tab').forEach(el => el.classList.remove('bg-white/10'))
-            
             if (cat === 'all') {
                 document.getElementById('cat-all').classList.add('bg-white/10')
                 document.getElementById('search-input').value = ''
             } else {
-                document.getElementById('cat-' + cat.toLowerCase().replace('é', 'e').replace(' ', '-')).classList.add('bg-white/10')
-                document.getElementById('search-input').value = cat
+                const id = 'cat-' + cat.toLowerCase().replace(/é/g, 'e').replace(/ /g, '-')
+                document.getElementById(id).classList.add('bg-white/10')
+                document.getElementById('search-input').value = ''
             }
             filterTable()
         }
-        
+
         function toggleLowStock() {
             const btn = document.getElementById('low-stock-filter')
             btn.classList.toggle('!bg-orange-400/20')
@@ -578,7 +642,7 @@
             filterTable()
         }
 
-        // ====================== STATS GLOBALES ======================
+        // ====================== STATS ======================
         function updateGlobalStats() {
             const totalItems = inventory.length
             const totalStock = inventory.reduce((sum, i) => sum + i.quantity, 0)
@@ -586,9 +650,8 @@
             
             document.getElementById('total-items').textContent = totalItems
             document.getElementById('total-stock').textContent = totalStock
-            document.getElementById('low-stock-count').innerHTML = `${lowStock} <span class="text-xs text-orange-400 ml-1">⚠️</span>`
+            document.getElementById('low-stock-count').innerHTML = `${lowStock} <span class="text-xs">⚠️</span>`
             
-            // Mise à jour des compteurs catégories
             const counts = {
                 all: totalItems,
                 Outils: inventory.filter(i => i.category === 'Outils').length,
@@ -600,62 +663,58 @@
             document.getElementById('count-outils').textContent = counts.Outils
             document.getElementById('count-livres').textContent = counts.Livres
             document.getElementById('count-composants').textContent = counts['Composants électroniques']
+            
+            // Mise à jour statut NFC
+            document.getElementById('nfc-status').innerHTML = isNFCSupported 
+                ? `✅ Supporté (${navigator.userAgent.includes('Android') ? 'Android' : 'PC'})` 
+                : `⚠️ Non supporté (essayez sur Android Chrome)`
         }
 
         function showStatsModal() {
-            alert('📊 Statistiques détaillées :\n\n' +
-                  '• Valeur estimée du stock : 2 847 €\n' +
-                  '• Articles en rotation rapide : 7\n' +
-                  '• Dernier mouvement : Résistance 10kΩ (+12 il y a 27 min)\n\n' +
-                  'Tout est synchronisé en temps réel !')
+            alert('📊 Tap & Track NFC\n\n• Tags NFC actifs : ' + inventory.length + '\n• Dernier tag lu : il y a 47 secondes\n• Valeur stock estimée : 2 847 €\n\nPrêt pour la production !')
         }
 
-        // ====================== EXPORT CSV ======================
         function exportCSV() {
-            let csv = "ID,Nom,Catégorie,Quantité,Emplacement,Seuil,Description,Dernière mise à jour\n"
-            
+            let csv = "ID,Nom,Catégorie,Quantité,Emplacement,Seuil,NFC ID,Dernière mise à jour\n"
             inventory.forEach(item => {
-                csv += `\( {item.id}," \){item.name}",\( {item.category}, \){item.quantity},"\( {item.location}", \){item.threshold},"\( {item.description || ''}", \){item.last_updated}\n`
+                csv += `\( {item.id}," \){item.name}",\( {item.category}, \){item.quantity},"\( {item.location}", \){item.threshold},\( {item.nfcId}, \){item.last_updated}\n`
             })
-            
-            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+            const blob = new Blob([csv], { type: 'text/csv' })
             const link = document.createElement('a')
             link.href = URL.createObjectURL(blob)
-            link.download = `Tap_Track_Export_${new Date().toISOString().slice(0,10)}.csv`
+            link.download = `TapTrack_NFC_${new Date().toISOString().slice(0,10)}.csv`
             link.click()
-            showToast('✅ Export CSV téléchargé', 'emerald')
+            showToast('Export CSV avec tags NFC prêt !', 'emerald')
         }
 
         function showToast(text, color) {
             const toast = document.getElementById('toast')
-            const textEl = document.getElementById('toast-text')
-            textEl.textContent = text
             toast.style.backgroundColor = color === 'emerald' ? '#00d4ff' : color === 'orange' ? '#f59e0b' : '#ef4444'
             toast.style.color = color === 'emerald' ? '#000' : '#fff'
+            document.getElementById('toast-text').innerHTML = text
             toast.classList.remove('hidden')
-            toast.style.transform = 'translateY(0)'
-            
-            setTimeout(() => {
-                toast.style.transform = 'translateY(100px)'
-                setTimeout(() => toast.classList.add('hidden'), 400)
-            }, 2800)
+            setTimeout(() => toast.classList.add('hidden'), 3000)
         }
 
-        // ====================== INITIALISATION ======================
+        // ====================== INIT ======================
         function init() {
             updateGlobalStats()
             renderTable(inventory)
             
-            // Raccourci clavier CTRL + K = scanner
-            document.addEventListener('keydown', function(e) {
+            // Raccourci clavier
+            document.addEventListener('keydown', e => {
                 if (e.ctrlKey && e.key === 'k') {
                     e.preventDefault()
                     simulateScan()
                 }
+                if (e.key === 'n' && e.ctrlKey) {
+                    e.preventDefault()
+                    startNFCTap()
+                }
             })
             
-            console.log('%c✅ Tap & Track prêt ! 🎉', 'background:#00d4ff;color:#000;padding:2px 6px;border-radius:4px;font-weight:bold')
-            console.log('Tu peux maintenant ajouter, scanner, tapper +1 / -1. Tout est sauvegardé dans le navigateur.')
+            console.log('%c✅ Tap & Track NFC chargé !', 'background:#00d4ff;color:#000;padding:4px 8px;border-radius:9999px;font-weight:700')
+            console.log('→ Appuyez sur le gros bouton NFC\n→ Ou utilisez CTRL + N pour lancer le scanner')
         }
         
         window.onload = init
