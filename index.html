@@ -1,264 +1,471 @@
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="theme-color" content="#00d4ff">
-    <title>Tap & Track • NFC</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
-        :root { --primary: #00d4ff; }
-        * { font-family: 'Inter', system_ui, sans-serif; }
-        
-        .tap-btn {
-            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        .tap-btn:active {
-            transform: scale(0.92);
-            box-shadow: 0 0 0 12px rgba(0, 212, 255, 0.4);
-        }
-        
-        .nfc-animation {
-            animation: nfcPulse 1.4s infinite ease-in-out;
-        }
-        @keyframes nfcPulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.12); }
-        }
-        
-        .stock-bar {
-            height: 6px;
-            background: linear-gradient(90deg, #00d4ff var(--stock-level), #334155 var(--stock-level));
-            border-radius: 9999px;
-        }
+import { useState, useEffect, useRef } from "react";
 
-        /* OPTIMISATIONS MOBILE */
-        @media (max-width: 768px) {
-            .table-container { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-            th, td { padding: 14px 10px !important; font-size: 15px; white-space: nowrap; }
-            .tap-btn { width: 48px !important; height: 48px !important; font-size: 1.4rem; }
-            .header-stats { font-size: 1.1rem; }
-            .main-content { padding-bottom: 100px; } /* espace pour les boutons flottants */
+const CATEGORIES = [
+  { id: "all", label: "TOUT", icon: "◈" },
+  { id: "tool", label: "OUTILS", icon: "⚙" },
+  { id: "book", label: "LIVRES", icon: "▣" },
+  { id: "electronic", label: "COMPOSANTS", icon: "⬡" },
+];
+
+const CATEGORY_META = {
+  tool: { label: "Outil", icon: "⚙", color: "#f59e0b" },
+  book: { label: "Livre", icon: "▣", color: "#22d3ee" },
+  electronic: { label: "Composant", icon: "⬡", color: "#a78bfa" },
+};
+
+const UNITS = {
+  tool: ["pièce", "unité", "lot"],
+  book: ["exemplaire", "tome", "volume"],
+  electronic: ["pièce", "pack", "boîte", "rouleau", "m"],
+};
+
+const SAMPLE_ITEMS = [
+  { id: 1, name: "Perceuse Bosch GSB 18V", category: "tool", qty: 2, unit: "pièce", location: "Étagère A1", minQty: 1, note: "Batteries chargées" },
+  { id: 2, name: "Tournevis Wera 6000", category: "tool", qty: 12, unit: "pièce", location: "Tiroir B3", minQty: 5, note: "" },
+  { id: 3, name: "Clean Code — R. Martin", category: "book", qty: 3, unit: "exemplaire", location: "Bibliothèque C1", minQty: 1, note: "Édition 2008" },
+  { id: 4, name: "Raspberry Pi 4 (4GB)", category: "electronic", qty: 5, unit: "pièce", location: "Boîte D2", minQty: 2, note: "" },
+  { id: 5, name: "Résistances 10kΩ", category: "electronic", qty: 480, unit: "pièce", location: "Boîte D5", minQty: 100, note: "0.25W" },
+  { id: 6, name: "Niveau à bulle 60cm", category: "tool", qty: 1, unit: "pièce", location: "Étagère A2", minQty: 1, note: "" },
+  { id: 7, name: "Le Petit Prince", category: "book", qty: 0, unit: "exemplaire", location: "Bibliothèque C2", minQty: 1, note: "En réapprovisionnement" },
+];
+
+const STORAGE_KEY = "tap-track-inventory";
+
+function useInventory() {
+  const [items, setItems] = useState([]);
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const result = await window.storage.get(STORAGE_KEY);
+        if (result?.value) {
+          setItems(JSON.parse(result.value));
+        } else {
+          setItems(SAMPLE_ITEMS);
         }
-        
-        .drawer {
-            animation: slideIn 0.3s cubic-bezier(0.32, 0.72, 0, 1);
-        }
-    </style>
-</head>
-<body class="bg-gray-950 text-white min-h-screen pb-20">
-    <!-- HEADER MOBILE-FRIENDLY -->
-    <header class="bg-black border-b border-white/10 sticky top-0 z-50">
-        <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
-            <!-- Logo + Hamburger -->
-            <div class="flex items-center gap-x-3">
-                <button onclick="toggleMobileDrawer()" class="lg:hidden p-2 -ml-2">
-                    <i class="fa-solid fa-bars text-3xl"></i>
-                </button>
-                <div class="w-9 h-9 bg-[#00d4ff] text-black rounded-2xl flex items-center justify-center text-3xl">📟</div>
-                <div>
-                    <h1 class="text-2xl font-semibold tracking-tight">Tap &amp; Track</h1>
-                    <p class="text-xs text-emerald-400 flex items-center gap-1">
-                        <span class="relative flex h-2 w-2">
-                            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                            <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-400"></span>
-                        </span>
-                        NFC • LIVE
-                    </p>
-                </div>
-            </div>
+      } catch {
+        setItems(SAMPLE_ITEMS);
+      }
+      setLoaded(true);
+    })();
+  }, []);
 
-            <!-- Stats compactes -->
-            <div onclick="showStatsModal()" class="flex items-center gap-x-4 header-stats cursor-pointer">
-                <div class="text-center">
-                    <div id="total-items" class="text-xl font-semibold text-[#00d4ff]">8</div>
-                    <div class="text-[10px] text-gray-400">ARTICLES</div>
-                </div>
-                <div class="text-center">
-                    <div id="total-stock" class="text-xl font-semibold">306</div>
-                    <div class="text-[10px] text-gray-400">EN STOCK</div>
-                </div>
-                <div class="text-center">
-                    <div id="low-stock-count" class="text-xl font-semibold text-emerald-400">0</div>
-                    <div class="text-[10px] text-gray-400">STOCK BAS</div>
-                </div>
-            </div>
+  useEffect(() => {
+    if (!loaded) return;
+    window.storage.set(STORAGE_KEY, JSON.stringify(items)).catch(() => {});
+  }, [items, loaded]);
 
-            <!-- Boutons header -->
-            <div class="flex items-center gap-x-3">
-                <button onclick="startNFCTap()" 
-                        class="flex items-center gap-x-2 bg-gradient-to-r from-[#00d4ff] to-cyan-400 text-black font-semibold px-5 h-10 rounded-3xl text-sm lg:hidden">
-                    <i class="fa-solid fa-nfc-symbol"></i>
-                    <span>TAP NFC</span>
-                </button>
+  return [items, setItems];
+}
 
-                <button onclick="simulateScan()" class="flex items-center gap-x-2 bg-white/10 hover:bg-white/20 px-4 h-10 rounded-3xl text-sm">
-                    <i class="fa-solid fa-barcode"></i>
-                    <span class="hidden sm:inline">Scanner</span>
-                </button>
+const emptyForm = { name: "", category: "tool", qty: 1, unit: "pièce", location: "", minQty: 1, note: "" };
 
-                <div class="w-8 h-8 bg-emerald-400 text-black rounded-2xl flex items-center justify-center text-xl">👷</div>
-            </div>
+export default function App() {
+  const [items, setItems] = useInventory();
+  const [filter, setFilter] = useState("all");
+  const [search, setSearch] = useState("");
+  const [modal, setModal] = useState(null); // null | { mode: 'add'|'edit'|'view', item? }
+  const [form, setForm] = useState(emptyForm);
+  const [deleteConfirm, setDeleteConfirm] = useState(null);
+  const [toast, setToast] = useState(null);
+  const [sortBy, setSortBy] = useState("name");
+  const nextId = useRef(Date.now());
+  const searchRef = useRef();
+
+  function showToast(msg, type = "ok") {
+    setToast({ msg, type });
+    setTimeout(() => setToast(null), 2400);
+  }
+
+  function openAdd() {
+    setForm(emptyForm);
+    setModal({ mode: "add" });
+  }
+
+  function openEdit(item) {
+    setForm({ ...item });
+    setModal({ mode: "edit", item });
+  }
+
+  function openView(item) {
+    setModal({ mode: "view", item });
+  }
+
+  function saveItem() {
+    if (!form.name.trim()) return;
+    if (modal.mode === "add") {
+      const newItem = { ...form, id: nextId.current++, qty: Number(form.qty), minQty: Number(form.minQty) };
+      setItems(prev => [newItem, ...prev]);
+      showToast(`« ${form.name} » ajouté`);
+    } else {
+      setItems(prev => prev.map(i => i.id === form.id ? { ...form, qty: Number(form.qty), minQty: Number(form.minQty) } : i));
+      showToast(`« ${form.name} » mis à jour`);
+    }
+    setModal(null);
+  }
+
+  function deleteItem(id) {
+    const item = items.find(i => i.id === id);
+    setItems(prev => prev.filter(i => i.id !== id));
+    setDeleteConfirm(null);
+    setModal(null);
+    showToast(`« ${item?.name} » supprimé`, "warn");
+  }
+
+  function adjustQty(id, delta) {
+    setItems(prev => prev.map(i => i.id === id ? { ...i, qty: Math.max(0, i.qty + delta) } : i));
+  }
+
+  const filtered = items
+    .filter(i => filter === "all" || i.category === filter)
+    .filter(i => {
+      const q = search.toLowerCase();
+      return !q || i.name.toLowerCase().includes(q) || i.location.toLowerCase().includes(q) || i.note.toLowerCase().includes(q);
+    })
+    .sort((a, b) => {
+      if (sortBy === "name") return a.name.localeCompare(b.name);
+      if (sortBy === "qty") return b.qty - a.qty;
+      if (sortBy === "cat") return a.category.localeCompare(b.category);
+      return 0;
+    });
+
+  const stats = {
+    total: items.length,
+    low: items.filter(i => i.qty > 0 && i.qty <= i.minQty).length,
+    out: items.filter(i => i.qty === 0).length,
+  };
+
+  return (
+    <div style={S.root}>
+      <style>{CSS}</style>
+
+      {/* HEADER */}
+      <header style={S.header}>
+        <div style={S.headerLeft}>
+          <span style={S.logo}>T&T</span>
+          <div>
+            <div style={S.appName}>TAP &amp; TRACK</div>
+            <div style={S.appSub}>GESTIONNAIRE D'INVENTAIRE</div>
+          </div>
         </div>
-    </header>
+        <div style={S.statsRow}>
+          <StatBadge label="ARTICLES" val={stats.total} color="#f59e0b" />
+          <StatBadge label="STOCK BAS" val={stats.low} color="#fb923c" />
+          <StatBadge label="ÉPUISÉ" val={stats.out} color="#f87171" />
+        </div>
+        <button style={S.addBtn} className="addBtn" onClick={openAdd}>+ AJOUTER</button>
+      </header>
 
-    <div class="max-w-7xl mx-auto px-4 py-6 flex flex-col lg:flex-row gap-6">
-        
-        <!-- SIDEBAR → Drawer sur mobile -->
-        <div id="sidebar" class="hidden lg:block w-72 flex-shrink-0 bg-white/5 backdrop-blur-xl rounded-3xl p-5 sticky top-6 h-fit">
-            <!-- Catégories (même contenu que avant) -->
-            <h2 class="uppercase text-xs tracking-[1px] text-gray-400 mb-4 px-3">Catégories</h2>
-            <div onclick="filterByCategory('all');closeMobileDrawer()" id="cat-all" class="category-tab flex items-center gap-x-3 px-4 py-4 rounded-2xl bg-white/10 mb-2 cursor-pointer">
-                <i class="fa-solid fa-boxes-stacked text-[#00d4ff]"></i>
-                <span class="font-medium flex-1">Tout le matériel</span>
-                <span id="count-all" class="text-xs bg-white/20 px-3 py-1 rounded-2xl">8</span>
-            </div>
-            <!-- Autres catégories identiques au code précédent -->
-            <div onclick="filterByCategory('Outils');closeMobileDrawer()" id="cat-outils" class="category-tab flex items-center gap-x-3 px-4 py-4 rounded-2xl hover:bg-white/10 mb-2 cursor-pointer">
-                <i class="fa-solid fa-screwdriver-wrench text-amber-400"></i>
-                <span class="font-medium flex-1">Outils</span>
-                <span id="count-outils" class="text-xs bg-white/20 px-3 py-1 rounded-2xl">3</span>
-            </div>
-            <div onclick="filterByCategory('Livres');closeMobileDrawer()" id="cat-livres" class="category-tab flex items-center gap-x-3 px-4 py-4 rounded-2xl hover:bg-white/10 mb-2 cursor-pointer">
-                <i class="fa-solid fa-book text-purple-400"></i>
-                <span class="font-medium flex-1">Livres</span>
-                <span id="count-livres" class="text-xs bg-white/20 px-3 py-1 rounded-2xl">2</span>
-            </div>
-            <div onclick="filterByCategory('Composants électroniques');closeMobileDrawer()" id="cat-composants" class="category-tab flex items-center gap-x-3 px-4 py-4 rounded-2xl hover:bg-white/10 mb-2 cursor-pointer">
-                <i class="fa-solid fa-microchip text-cyan-400"></i>
-                <span class="font-medium flex-1">Composants électroniques</span>
-                <span id="count-composants" class="text-xs bg-white/20 px-3 py-1 rounded-2xl">3</span>
-            </div>
-
-            <div class="h-px bg-white/10 my-6"></div>
-            <button onclick="showAddModal();closeMobileDrawer()" class="w-full h-12 bg-[#00d4ff] text-black font-semibold rounded-3xl flex items-center justify-center gap-x-3 text-lg mb-3">
-                <i class="fa-solid fa-plus"></i>
-                <span>Ajouter un article</span>
+      {/* TOOLBAR */}
+      <div style={S.toolbar}>
+        <div style={S.catTabs}>
+          {CATEGORIES.map(c => (
+            <button key={c.id} style={{ ...S.catTab, ...(filter === c.id ? S.catTabActive : {}) }}
+              className="catTab" onClick={() => setFilter(c.id)}>
+              <span>{c.icon}</span> {c.label}
+              <span style={S.catCount}>
+                {c.id === "all" ? items.length : items.filter(i => i.category === c.id).length}
+              </span>
             </button>
-            <button onclick="exportCSV();closeMobileDrawer()" class="w-full h-12 border border-white/30 hover:border-white/60 font-medium rounded-3xl flex items-center justify-center gap-x-3">
-                <i class="fa-solid fa-file-export"></i>
-                <span>Exporter CSV</span>
-            </button>
+          ))}
         </div>
-
-        <!-- CONTENU PRINCIPAL -->
-        <div class="flex-1 main-content">
-            <!-- Recherche + filtres -->
-            <div class="flex flex-col sm:flex-row gap-3 mb-6">
-                <div class="flex-1 relative">
-                    <i class="fa-solid fa-magnifying-glass absolute left-5 top-1/2 -translate-y-1/2 text-gray-400"></i>
-                    <input id="search-input" onkeyup="if(event.keyCode===13) filterTable()" 
-                           type="text" placeholder="Rechercher ou scanner NFC…" 
-                           class="w-full bg-white/10 border border-white/10 focus:border-[#00d4ff] rounded-3xl h-12 pl-12 pr-6 text-white placeholder-gray-400 outline-none text-base">
-                </div>
-                <select id="sort-select" onchange="filterTable()" class="bg-white/10 border border-white/10 rounded-3xl px-6 py-3 outline-none text-sm">
-                    <option value="name">Nom A-Z</option>
-                    <option value="quantity">Quantité ↓</option>
-                    <option value="last_updated">Dernier scan</option>
-                </select>
-                <button onclick="toggleLowStock()" id="low-stock-filter"
-                        class="px-6 bg-orange-400/10 hover:bg-orange-400/20 text-orange-400 rounded-3xl font-medium flex items-center gap-2 whitespace-nowrap">
-                    <i class="fa-solid fa-triangle-exclamation"></i>
-                    <span class="text-sm">Stock bas</span>
-                </button>
-            </div>
-
-            <!-- TABLEAU / LISTE -->
-            <div class="bg-white/5 backdrop-blur-xl rounded-3xl table-container">
-                <table class="w-full min-w-[700px]" id="inventory-table">
-                    <thead>
-                        <tr class="border-b border-white/10 text-xs uppercase tracking-widest text-gray-400">
-                            <th class="text-left py-4 px-6">Article</th>
-                            <th class="text-left py-4 px-6">Catégorie</th>
-                            <th class="text-left py-4 px-6">Quantité</th>
-                            <th class="text-left py-4 px-6">Emplacement</th>
-                            <th class="text-left py-4 px-6">Tag NFC</th>
-                            <th class="text-right py-4 px-6">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="table-body" class="text-sm divide-y divide-white/10"></tbody>
-                </table>
-            </div>
-
-            <p class="text-xs text-center text-gray-500 mt-8">✅ Sauvegarde automatique • NFC synchronisé</p>
+        <div style={S.searchWrap}>
+          <span style={S.searchIcon}>⌕</span>
+          <input ref={searchRef} style={S.search} placeholder="Rechercher…" value={search}
+            onChange={e => setSearch(e.target.value)} />
+          {search && <button style={S.clearSearch} onClick={() => setSearch("")}>✕</button>}
         </div>
-    </div>
+        <select style={S.sortSelect} value={sortBy} onChange={e => setSortBy(e.target.value)}>
+          <option value="name">Trier : Nom</option>
+          <option value="qty">Trier : Quantité</option>
+          <option value="cat">Trier : Catégorie</option>
+        </select>
+      </div>
 
-    <!-- DRAWER MOBILE -->
-    <div onclick="if(event.target.id === 'mobile-drawer')closeMobileDrawer()" id="mobile-drawer" class="hidden fixed inset-0 bg-black/80 z-[99999] lg:hidden">
-        <div onclick="event.stopImmediatePropagation()" class="drawer absolute bottom-0 left-0 right-0 bg-gray-900 rounded-t-3xl max-h-[85vh] overflow-auto">
-            <div class="px-6 py-5 border-b border-white/10 flex items-center justify-between sticky top-0 bg-gray-900 z-10">
-                <h2 class="text-xl font-semibold">Menu • Tap &amp; Track</h2>
-                <button onclick="closeMobileDrawer()" class="text-4xl leading-none text-gray-400">×</button>
-            </div>
-            <div class="p-6 space-y-2">
-                <!-- Même catégories que le sidebar -->
-                <div onclick="filterByCategory('all');closeMobileDrawer()" class="category-tab flex items-center gap-x-4 px-5 py-5 rounded-3xl bg-white/10">
-                    <i class="fa-solid fa-boxes-stacked text-2xl text-[#00d4ff]"></i>
-                    <span class="flex-1 font-medium text-lg">Tout le matériel</span>
-                    <span id="count-all-mobile" class="text-sm bg-white/20 px-4 py-2 rounded-3xl">8</span>
-                </div>
-                <!-- Copier les autres catégories ici (identiques au code) -->
-                <!-- Pour gagner de la place, je les ai omis dans cet exemple mais tu les copies du sidebar -->
-                <div class="pt-6">
-                    <button onclick="showAddModal();closeMobileDrawer()" class="w-full h-14 bg-[#00d4ff] text-black font-semibold rounded-3xl text-lg flex items-center justify-center gap-3">
-                        <i class="fa-solid fa-plus"></i> Ajouter un article + NFC
-                    </button>
-                </div>
-            </div>
+      {/* GRID */}
+      <main style={S.grid}>
+        {filtered.length === 0 && (
+          <div style={S.empty}>
+            <div style={{ fontSize: 48, opacity: 0.2 }}>◈</div>
+            <div style={{ color: "#555", fontFamily: "monospace", marginTop: 8 }}>AUCUN ARTICLE TROUVÉ</div>
+          </div>
+        )}
+        {filtered.map(item => (
+          <ItemCard key={item.id} item={item} onView={() => openView(item)}
+            onEdit={() => openEdit(item)} onAdjust={adjustQty} />
+        ))}
+      </main>
+
+      {/* MODAL */}
+      {modal && (
+        <div style={S.overlay} onClick={() => setModal(null)}>
+          <div style={S.modal} onClick={e => e.stopPropagation()}>
+            {modal.mode === "view" ? (
+              <ViewPanel item={modal.item} onEdit={() => openEdit(modal.item)}
+                onDelete={() => setDeleteConfirm(modal.item.id)} onClose={() => setModal(null)} onAdjust={adjustQty} />
+            ) : (
+              <FormPanel mode={modal.mode} form={form} setForm={setForm}
+                onSave={saveItem} onClose={() => setModal(null)} />
+            )}
+          </div>
         </div>
+      )}
+
+      {/* DELETE CONFIRM */}
+      {deleteConfirm && (
+        <div style={S.overlay} onClick={() => setDeleteConfirm(null)}>
+          <div style={{ ...S.modal, maxWidth: 360, textAlign: "center" }} onClick={e => e.stopPropagation()}>
+            <div style={{ fontSize: 36, marginBottom: 8 }}>⚠</div>
+            <div style={{ color: "#f87171", fontFamily: "monospace", fontWeight: 700, marginBottom: 8 }}>SUPPRIMER ?</div>
+            <div style={{ color: "#888", fontSize: 13, marginBottom: 24 }}>
+              Cette action est irréversible.
+            </div>
+            <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
+              <button style={S.btnSecondary} onClick={() => setDeleteConfirm(null)}>ANNULER</button>
+              <button style={S.btnDanger} onClick={() => deleteItem(deleteConfirm)}>SUPPRIMER</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* TOAST */}
+      {toast && (
+        <div style={{ ...S.toast, borderColor: toast.type === "warn" ? "#f87171" : "#f59e0b" }}>
+          <span style={{ color: toast.type === "warn" ? "#f87171" : "#f59e0b" }}>
+            {toast.type === "warn" ? "⚠" : "✓"}
+          </span>
+          {toast.msg}
+        </div>
+      )}
     </div>
+  );
+}
 
-    <!-- BOUTONS FLOTTANTS MOBILE (thumb-friendly) -->
-    <div class="fixed bottom-6 right-6 flex flex-col gap-4 z-[9999] lg:hidden">
-        <button onclick="startNFCTap()" 
-                class="w-16 h-16 bg-gradient-to-br from-[#00d4ff] to-cyan-400 rounded-3xl shadow-2xl shadow-cyan-500/50 flex items-center justify-center text-4xl text-black tap-btn">
-            <i class="fa-solid fa-nfc-symbol"></i>
-        </button>
-        <button onclick="showAddModal()" 
-                class="w-16 h-16 bg-emerald-400 rounded-3xl shadow-2xl flex items-center justify-center text-4xl text-black tap-btn">
-            <i class="fa-solid fa-plus"></i>
-        </button>
+function StatBadge({ label, val, color }) {
+  return (
+    <div style={{ textAlign: "center" }}>
+      <div style={{ color, fontSize: 22, fontWeight: 900, fontFamily: "monospace", lineHeight: 1 }}>{val}</div>
+      <div style={{ color: "#555", fontSize: 9, fontFamily: "monospace", letterSpacing: 1 }}>{label}</div>
     </div>
+  );
+}
 
-    <!-- MODALS (inchangés) + le reste du script NFC, add, etc. -->
-    <!-- Pour ne pas surcharger ce message, je te donne la partie critique. 
-         Colle tout le reste du script de ma précédente version (base de données, renderTable, NFC, etc.) 
-         juste avant la balise </body> -->
+function ItemCard({ item, onView, onEdit, onAdjust }) {
+  const meta = CATEGORY_META[item.category];
+  const isOut = item.qty === 0;
+  const isLow = !isOut && item.qty <= item.minQty;
 
-    <script>
-        // === TOUT LE JAVASCRIPT PRÉCÉDENT (base de données, NFC, renderTable, etc.) ===
-        // Copie-colle ici tout le <script> de la version NFC que je t'ai donnée précédemment
-        // (les variables inventory, saveDB, renderTable, tapItem, startNFCTap, etc.)
+  return (
+    <div style={{ ...S.card, borderColor: isOut ? "#f87171" : isLow ? "#fb923c44" : "#1e1e1e" }}
+      className="card" onClick={onView}>
+      <div style={S.cardTop}>
+        <span style={{ ...S.catPill, color: meta.color, borderColor: meta.color + "44" }}>
+          {meta.icon} {meta.label}
+        </span>
+        {isOut && <span style={S.badgeOut}>ÉPUISÉ</span>}
+        {isLow && <span style={S.badgeLow}>BAS</span>}
+      </div>
+      <div style={S.cardName}>{item.name}</div>
+      {item.location && <div style={S.cardLoc}>📍 {item.location}</div>}
+      <div style={S.cardBottom}>
+        <div style={S.qtyRow}>
+          <button style={S.qtyBtn} className="qtyBtn"
+            onClick={e => { e.stopPropagation(); onAdjust(item.id, -1); }}>−</button>
+          <span style={{ ...S.qtyVal, color: isOut ? "#f87171" : isLow ? "#fb923c" : "#f59e0b" }}>
+            {item.qty}
+          </span>
+          <button style={S.qtyBtn} className="qtyBtn"
+            onClick={e => { e.stopPropagation(); onAdjust(item.id, +1); }}>+</button>
+          <span style={S.unitLabel}>{item.unit}</span>
+        </div>
+        <button style={S.editIconBtn} className="editIconBtn"
+          onClick={e => { e.stopPropagation(); onEdit(); }}>✎</button>
+      </div>
+    </div>
+  );
+}
 
-        // AJOUTS MOBILE
-        function toggleMobileDrawer() {
-            document.getElementById('mobile-drawer').classList.toggle('hidden')
-            document.getElementById('mobile-drawer').classList.toggle('flex')
-        }
-        function closeMobileDrawer() {
-            const drawer = document.getElementById('mobile-drawer')
-            drawer.classList.add('hidden')
-            drawer.classList.remove('flex')
-        }
+function ViewPanel({ item, onEdit, onDelete, onClose, onAdjust }) {
+  const meta = CATEGORY_META[item.category];
+  const isOut = item.qty === 0;
+  const isLow = !isOut && item.qty <= item.minQty;
+  return (
+    <div>
+      <div style={S.panelHeader}>
+        <span style={{ color: meta.color, fontSize: 20 }}>{meta.icon}</span>
+        <span style={{ flex: 1, color: "#fff", fontFamily: "monospace", fontWeight: 700 }}>{item.name}</span>
+        <button style={S.closeBtn} onClick={onClose}>✕</button>
+      </div>
+      <div style={S.panelGrid}>
+        <InfoRow label="CATÉGORIE" val={meta.label} />
+        <InfoRow label="EMPLACEMENT" val={item.location || "—"} />
+        <InfoRow label="UNITÉ" val={item.unit} />
+        <InfoRow label="SEUIL MIN." val={item.minQty} />
+        {item.note && <InfoRow label="NOTE" val={item.note} />}
+      </div>
+      <div style={{ display: "flex", alignItems: "center", gap: 16, margin: "20px 0", justifyContent: "center" }}>
+        <button style={S.bigQtyBtn} onClick={() => onAdjust(item.id, -1)}>−</button>
+        <div style={{ textAlign: "center" }}>
+          <div style={{ color: isOut ? "#f87171" : isLow ? "#fb923c" : "#f59e0b", fontSize: 42, fontFamily: "monospace", fontWeight: 900, lineHeight: 1 }}>{item.qty}</div>
+          <div style={{ color: "#555", fontSize: 11, fontFamily: "monospace" }}>{item.unit.toUpperCase()}</div>
+        </div>
+        <button style={S.bigQtyBtn} onClick={() => onAdjust(item.id, +1)}>+</button>
+      </div>
+      {(isOut || isLow) && (
+        <div style={{ background: isOut ? "#f871711a" : "#fb923c1a", border: `1px solid ${isOut ? "#f87171" : "#fb923c"}44`, borderRadius: 6, padding: "8px 12px", marginBottom: 16, color: isOut ? "#f87171" : "#fb923c", fontSize: 12, fontFamily: "monospace" }}>
+          {isOut ? "⚠ STOCK ÉPUISÉ — réapprovisionnement requis" : "⚠ STOCK BAS — en dessous du seuil minimum"}
+        </div>
+      )}
+      <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+        <button style={S.btnSecondary} onClick={onDelete}>🗑 Supprimer</button>
+        <button style={S.btnPrimary} onClick={onEdit}>✎ Modifier</button>
+      </div>
+    </div>
+  );
+}
 
-        // Mise à jour des compteurs mobiles
-        function updateMobileCounts() {
-            // Même logique que updateGlobalStats mais pour les ID *-mobile
-            // (tu peux réutiliser la même fonction)
-        }
+function InfoRow({ label, val }) {
+  return (
+    <div style={{ display: "flex", justifyContent: "space-between", borderBottom: "1px solid #1a1a1a", padding: "8px 0" }}>
+      <span style={{ color: "#444", fontSize: 10, fontFamily: "monospace", letterSpacing: 1 }}>{label}</span>
+      <span style={{ color: "#ccc", fontSize: 13, fontFamily: "monospace" }}>{val}</span>
+    </div>
+  );
+}
 
-        // Initialisation optimisée
-        function init() {
-            updateGlobalStats()
-            renderTable(inventory)
-            console.log('%c🚀 Tap & Track OPTIMISÉ MOBILE chargé !', 'background:#00d4ff;color:#000;padding:4px 8px;border-radius:9999px')
-        }
-        window.onload = init
-    </script>
-</body>
-</html>
+function FormPanel({ mode, form, setForm, onSave, onClose }) {
+  const f = form;
+  const up = (k, v) => setForm(p => ({ ...p, [k]: v }));
+  return (
+    <div>
+      <div style={S.panelHeader}>
+        <span style={{ color: "#f59e0b", fontSize: 18 }}>◈</span>
+        <span style={{ flex: 1, color: "#fff", fontFamily: "monospace", fontWeight: 700 }}>
+          {mode === "add" ? "NOUVEL ARTICLE" : "MODIFIER L'ARTICLE"}
+        </span>
+        <button style={S.closeBtn} onClick={onClose}>✕</button>
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: 8 }}>
+        <Field label="NOM *">
+          <input style={S.input} value={f.name} onChange={e => up("name", e.target.value)} placeholder="ex: Perceuse Makita 18V" />
+        </Field>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+          <Field label="CATÉGORIE">
+            <select style={S.input} value={f.category} onChange={e => { up("category", e.target.value); up("unit", UNITS[e.target.value][0]); }}>
+              <option value="tool">⚙ Outil</option>
+              <option value="book">▣ Livre</option>
+              <option value="electronic">⬡ Composant</option>
+            </select>
+          </Field>
+          <Field label="UNITÉ">
+            <select style={S.input} value={f.unit} onChange={e => up("unit", e.target.value)}>
+              {(UNITS[f.category] || UNITS.tool).map(u => <option key={u} value={u}>{u}</option>)}
+            </select>
+          </Field>
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+          <Field label="QUANTITÉ">
+            <input style={S.input} type="number" min="0" value={f.qty} onChange={e => up("qty", e.target.value)} />
+          </Field>
+          <Field label="SEUIL MIN.">
+            <input style={S.input} type="number" min="0" value={f.minQty} onChange={e => up("minQty", e.target.value)} />
+          </Field>
+        </div>
+        <Field label="EMPLACEMENT">
+          <input style={S.input} value={f.location} onChange={e => up("location", e.target.value)} placeholder="ex: Étagère A3, Tiroir B1…" />
+        </Field>
+        <Field label="NOTE">
+          <textarea style={{ ...S.input, resize: "vertical", minHeight: 64 }} value={f.note}
+            onChange={e => up("note", e.target.value)} placeholder="Informations complémentaires…" />
+        </Field>
+        <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
+          <button style={S.btnSecondary} onClick={onClose}>ANNULER</button>
+          <button style={S.btnPrimary} onClick={onSave} disabled={!f.name.trim()}>
+            {mode === "add" ? "✓ AJOUTER" : "✓ ENREGISTRER"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Field({ label, children }) {
+  return (
+    <div>
+      <div style={{ color: "#444", fontSize: 9, fontFamily: "monospace", letterSpacing: 1.5, marginBottom: 4 }}>{label}</div>
+      {children}
+    </div>
+  );
+}
+
+// ─── STYLES ────────────────────────────────────────────────────────────────────
+const S = {
+  root: { background: "#0a0a0a", minHeight: "100vh", color: "#ccc", fontFamily: "monospace", padding: "0 0 48px" },
+  header: { background: "#0f0f0f", borderBottom: "1px solid #1a1a1a", padding: "16px 24px", display: "flex", alignItems: "center", gap: 24, flexWrap: "wrap" },
+  headerLeft: { display: "flex", alignItems: "center", gap: 14, flex: 1 },
+  logo: { background: "#f59e0b", color: "#000", fontWeight: 900, fontSize: 18, padding: "6px 10px", borderRadius: 4, letterSpacing: 1 },
+  appName: { color: "#fff", fontWeight: 900, fontSize: 16, letterSpacing: 3 },
+  appSub: { color: "#444", fontSize: 9, letterSpacing: 2 },
+  statsRow: { display: "flex", gap: 24, alignItems: "center" },
+  addBtn: { background: "#f59e0b", color: "#000", border: "none", fontWeight: 900, fontFamily: "monospace", fontSize: 12, padding: "10px 20px", borderRadius: 4, cursor: "pointer", letterSpacing: 1 },
+
+  toolbar: { padding: "14px 24px", borderBottom: "1px solid #141414", display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center" },
+  catTabs: { display: "flex", gap: 4 },
+  catTab: { background: "none", border: "1px solid #1e1e1e", color: "#555", fontFamily: "monospace", fontSize: 10, padding: "6px 12px", borderRadius: 4, cursor: "pointer", letterSpacing: 1, display: "flex", alignItems: "center", gap: 6 },
+  catTabActive: { background: "#f59e0b14", borderColor: "#f59e0b44", color: "#f59e0b" },
+  catCount: { background: "#1a1a1a", borderRadius: 3, padding: "1px 5px", fontSize: 9, marginLeft: 2 },
+  searchWrap: { flex: 1, minWidth: 160, position: "relative", display: "flex", alignItems: "center" },
+  searchIcon: { position: "absolute", left: 10, color: "#444", fontSize: 16 },
+  search: { width: "100%", background: "#111", border: "1px solid #1e1e1e", borderRadius: 4, color: "#ccc", fontFamily: "monospace", fontSize: 12, padding: "7px 32px 7px 30px", outline: "none", boxSizing: "border-box" },
+  clearSearch: { position: "absolute", right: 8, background: "none", border: "none", color: "#555", cursor: "pointer", fontSize: 12 },
+  sortSelect: { background: "#111", border: "1px solid #1e1e1e", color: "#666", fontFamily: "monospace", fontSize: 10, padding: "7px 10px", borderRadius: 4, outline: "none" },
+
+  grid: { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: 12, padding: 24 },
+  empty: { gridColumn: "1/-1", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 80 },
+
+  card: { background: "#0f0f0f", border: "1px solid #1e1e1e", borderRadius: 6, padding: 14, cursor: "pointer", transition: "border-color .15s", display: "flex", flexDirection: "column", gap: 8 },
+  cardTop: { display: "flex", alignItems: "center", justifyContent: "space-between" },
+  catPill: { fontSize: 10, border: "1px solid", borderRadius: 3, padding: "2px 7px", letterSpacing: .5 },
+  badgeOut: { background: "#f871711a", color: "#f87171", border: "1px solid #f8717144", borderRadius: 3, fontSize: 9, padding: "2px 6px", fontWeight: 700, letterSpacing: 1 },
+  badgeLow: { background: "#fb923c1a", color: "#fb923c", border: "1px solid #fb923c44", borderRadius: 3, fontSize: 9, padding: "2px 6px", fontWeight: 700, letterSpacing: 1 },
+  cardName: { color: "#e5e5e5", fontWeight: 700, fontSize: 13, lineHeight: 1.3 },
+  cardLoc: { color: "#444", fontSize: 10 },
+  cardBottom: { display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 4 },
+  qtyRow: { display: "flex", alignItems: "center", gap: 6 },
+  qtyBtn: { background: "#1a1a1a", border: "1px solid #2a2a2a", color: "#888", width: 24, height: 24, borderRadius: 4, cursor: "pointer", fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "monospace" },
+  qtyVal: { fontSize: 20, fontWeight: 900, minWidth: 32, textAlign: "center", lineHeight: 1 },
+  unitLabel: { color: "#444", fontSize: 9, letterSpacing: .5 },
+  editIconBtn: { background: "none", border: "1px solid #1e1e1e", color: "#555", width: 28, height: 28, borderRadius: 4, cursor: "pointer", fontSize: 14 },
+
+  overlay: { position: "fixed", inset: 0, background: "#000000bb", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100, padding: 16 },
+  modal: { background: "#0f0f0f", border: "1px solid #222", borderRadius: 8, padding: 24, width: "100%", maxWidth: 480, maxHeight: "90vh", overflowY: "auto" },
+  panelHeader: { display: "flex", alignItems: "center", gap: 10, marginBottom: 16, paddingBottom: 12, borderBottom: "1px solid #1a1a1a" },
+  closeBtn: { background: "none", border: "none", color: "#555", cursor: "pointer", fontSize: 16, padding: "0 4px" },
+  panelGrid: { display: "flex", flexDirection: "column" },
+  bigQtyBtn: { background: "#1a1a1a", border: "1px solid #2a2a2a", color: "#888", width: 44, height: 44, borderRadius: 8, cursor: "pointer", fontSize: 22, fontFamily: "monospace" },
+
+  input: { background: "#111", border: "1px solid #222", borderRadius: 4, color: "#ccc", fontFamily: "monospace", fontSize: 12, padding: "8px 10px", width: "100%", outline: "none", boxSizing: "border-box" },
+  btnPrimary: { flex: 1, background: "#f59e0b", color: "#000", border: "none", fontWeight: 900, fontFamily: "monospace", fontSize: 11, padding: "10px 0", borderRadius: 4, cursor: "pointer", letterSpacing: 1 },
+  btnSecondary: { flex: 1, background: "none", color: "#666", border: "1px solid #2a2a2a", fontWeight: 700, fontFamily: "monospace", fontSize: 11, padding: "10px 0", borderRadius: 4, cursor: "pointer", letterSpacing: 1 },
+  btnDanger: { flex: 1, background: "#f871711a", color: "#f87171", border: "1px solid #f8717144", fontWeight: 700, fontFamily: "monospace", fontSize: 11, padding: "10px 0", borderRadius: 4, cursor: "pointer", letterSpacing: 1 },
+
+  toast: { position: "fixed", bottom: 24, left: "50%", transform: "translateX(-50%)", background: "#111", border: "1px solid", borderRadius: 6, padding: "10px 20px", fontFamily: "monospace", fontSize: 12, color: "#ccc", display: "flex", gap: 8, alignItems: "center", zIndex: 200, boxShadow: "0 4px 24px #000" },
+};
+
+const CSS = `
+  body { margin: 0; background: #0a0a0a; }
+  * { box-sizing: border-box; }
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: #0a0a0a; }
+  ::-webkit-scrollbar-thumb { background: #2a2a2a; border-radius: 3px; }
+  .addBtn:hover { background: #fbbf24 !important; }
+  .card:hover { border-color: #2a2a2a !important; background: #111 !important; }
+  .catTab:hover { border-color: #2a2a2a !important; color: #888 !important; }
+  .qtyBtn:hover { background: #252525 !important; color: #f59e0b !important; border-color: #f59e0b44 !important; }
+  .editIconBtn:hover { background: #1a1a1a !important; color: #f59e0b !important; border-color: #f59e0b44 !important; }
+  input:focus, select:focus, textarea:focus { border-color: #f59e0b44 !important; }
+  @media (max-width: 600px) {
+    .statsRow { display: none; }
+  }
+`;
