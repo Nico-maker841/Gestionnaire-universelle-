@@ -2,253 +2,409 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Tap & Track v2</title>
-<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Share+Tech+Mono&family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Smart-Storage NFC</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=JetBrains+Mono:wght@400;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
+/* ════════════════════════════════════════════
+   VARIABLES & RESET
+════════════════════════════════════════════ */
 :root{
-  --bg:#07080e;--s1:#0d0e18;--s2:#12141f;--s3:#181a28;
-  --b1:#1d2033;--b2:#272b42;
-  --tool:#FF5722;--book:#0EA5E9;--elec:#84CC16;
-  --amber:#FFB800;--warn:#F97316;--err:#EF4444;--nfc:#22D3EE;--ok:#22C55E;
-  --t1:#F1F5F9;--t2:#94A3B8;--t3:#3D4A63;
-  --mono:'Share Tech Mono',monospace;--body:'Outfit',sans-serif;--disp:'Bebas Neue',sans-serif;
-  --r:10px;
+  --bg:#060810;--s1:#0b0d18;--s2:#111423;--s3:#181b2e;--b1:#1e2238;--b2:#272d4a;
+  /* Zone neons */
+  --zA:#3B82F6;--zAg:#1d4ed8;   /* Chambre — bleu */
+  --zB:#22C55E;--zBg:#15803d;   /* Cuisine — vert */
+  --zC:#F97316;--zCg:#c2410c;   /* Garage  — orange */
+  --zD:#A855F7;--zDg:#7e22ce;   /* Salon   — violet */
+  --zE:#EC4899;--zEg:#be185d;   /* Atelier — rose */
+  /* States */
+  --ok:#22C55E;--warn:#FBBF24;--err:#EF4444;--nfc:#22D3EE;
+  --t1:#F0F4FF;--t2:#8892B0;--t3:#3D4A6B;
+  --mono:'JetBrains Mono',monospace;
+  --body:'Outfit',sans-serif;
+  --disp:'Syne',sans-serif;
+  --r:14px;
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 html,body{background:var(--bg);color:var(--t1);font-family:var(--body);min-height:100vh;overflow-x:hidden}
-::-webkit-scrollbar{width:3px}::-webkit-scrollbar-thumb{background:var(--b2)}
+::-webkit-scrollbar{width:3px}::-webkit-scrollbar-thumb{background:var(--b2);border-radius:2px}
 
-/* ── HEADER ─────────────────────── */
-#hdr{background:var(--s1);border-bottom:1px solid var(--b1);padding:11px 14px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:40}
-#logo{background:var(--amber);color:#000;font-family:var(--disp);font-size:19px;letter-spacing:1px;padding:4px 10px;border-radius:5px;flex-shrink:0}
+/* ════════════════════════════════════════════
+   HEADER
+════════════════════════════════════════════ */
+#hdr{
+  background:var(--s1);border-bottom:1px solid var(--b1);
+  padding:10px 14px;display:flex;align-items:center;gap:10px;
+  position:sticky;top:0;z-index:50;
+}
+#logo{
+  background:linear-gradient(135deg,#3B82F6,#A855F7);
+  color:#fff;font-family:var(--disp);font-size:15px;letter-spacing:1px;
+  padding:5px 11px;border-radius:8px;flex-shrink:0;font-weight:800;
+}
 #aname{flex:1}
-#aname .n{font-family:var(--disp);font-size:17px;letter-spacing:3px;color:#fff;line-height:1}
+#aname .n{font-family:var(--disp);font-size:15px;letter-spacing:2px;color:var(--t1);line-height:1;font-weight:800}
 #aname .s{font-size:7px;color:var(--t3);letter-spacing:2px;font-family:var(--mono)}
-#hstats{display:flex;gap:12px;flex-shrink:0}
-.hst{text-align:center}
-.hst .v{font-family:var(--disp);font-size:19px;line-height:1}
+#hstats{display:flex;gap:14px}
+.hst .v{font-family:var(--disp);font-size:20px;line-height:1;font-weight:800}
 .hst .l{font-size:7px;color:var(--t3);letter-spacing:1px;font-family:var(--mono)}
 
-/* ── BOTTOM TABS ─────────────────── */
-#tabs{position:fixed;bottom:0;left:0;right:0;z-index:40;background:var(--s1);border-top:1px solid var(--b1);display:flex;max-width:600px;margin:0 auto}
-.tab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:10px 4px 14px;background:none;border:none;color:var(--t3);font-family:var(--mono);font-size:8px;letter-spacing:1px;cursor:pointer;gap:3px;transition:color .15s}
-.tab .ico{font-size:19px;line-height:1}
-.tab.active{color:var(--amber)}
-.tab-ind{height:2px;width:20px;background:transparent;border-radius:1px;transition:background .15s;margin-top:2px}
-.tab.active .tab-ind{background:var(--amber)}
+/* ════════════════════════════════════════════
+   BOTTOM NAV
+════════════════════════════════════════════ */
+#nav{position:fixed;bottom:0;left:0;right:0;z-index:50;background:var(--s1);
+  border-top:1px solid var(--b1);display:flex;height:60px}
+.nb{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:2px;background:none;border:none;color:var(--t3);font-family:var(--mono);
+  font-size:7.5px;letter-spacing:.8px;cursor:pointer;transition:color .15s;padding:0}
+.nb .ni{font-size:20px;line-height:1}
+.nb.on{color:var(--nfc)}
+.nb.on .nb-bar{background:var(--nfc)}
+.nb-bar{width:18px;height:2px;border-radius:1px;margin-top:2px;background:transparent}
 
-/* ── CONTENT ─────────────────────── */
-#content{padding-bottom:70px;max-width:600px;margin:0 auto}
-.tpanel{display:none}
-.tpanel.active{display:block}
+/* FAB */
+#fab{position:fixed;right:14px;bottom:68px;z-index:45;
+  width:52px;height:52px;border-radius:50%;border:none;
+  background:linear-gradient(135deg,#3B82F6,#A855F7);
+  color:#fff;font-size:26px;cursor:pointer;
+  box-shadow:0 0 24px #3B82F640,0 4px 12px #0006;
+  display:flex;align-items:center;justify-content:center;
+  transition:all .15s}
+#fab:hover{transform:scale(1.08)}
 
-/* ── INVENTORY TOOLBAR ───────────── */
-#itb{padding:10px 12px;display:flex;gap:6px;flex-wrap:wrap;align-items:center;background:var(--bg);position:sticky;top:54px;z-index:30;border-bottom:1px solid var(--b1)}
-.ctabs{display:flex;gap:4px;flex-wrap:wrap}
-.ctab{background:none;border:1px solid var(--b1);color:var(--t3);font-family:var(--mono);font-size:9px;padding:5px 9px;border-radius:20px;cursor:pointer;letter-spacing:.5px;display:flex;align-items:center;gap:4px;transition:all .15s;white-space:nowrap}
-.ctab.ca{border-color:var(--amber);color:var(--amber);background:#FFB80012}
-.ctab.ct{border-color:var(--tool);color:var(--tool);background:#FF572212}
-.ctab.cb{border-color:var(--book);color:var(--book);background:#0EA5E912}
-.ctab.ce{border-color:var(--elec);color:var(--elec);background:#84CC1612}
-.cnt2{font-size:8px;background:var(--s2);border-radius:10px;padding:1px 5px}
-#sw2{position:relative;display:flex;align-items:center;flex:1;min-width:100px}
-#sw2 .si{position:absolute;left:9px;color:var(--t3);font-size:14px}
-#si2{width:100%;background:var(--s2);border:1px solid var(--b1);border-radius:20px;color:var(--t1);font-family:var(--mono);font-size:11px;padding:7px 28px 7px 26px;outline:none}
-#sc2{position:absolute;right:8px;background:none;border:none;color:var(--t3);cursor:pointer;font-size:10px;display:none}
+/* ════════════════════════════════════════════
+   TABS CONTENT
+════════════════════════════════════════════ */
+#content{padding-bottom:68px;max-width:600px;margin:0 auto}
+.tp{display:none}.tp.on{display:block}
 
-/* ── FABs ─────────────────────────── */
-#fab-add{position:fixed;right:14px;bottom:76px;z-index:35;background:var(--amber);color:#000;border:none;width:50px;height:50px;border-radius:50%;font-size:26px;cursor:pointer;box-shadow:0 4px 20px #FFB80050;display:flex;align-items:center;justify-content:center;transition:all .15s}
-#fab-add:hover{background:#ffc929}
-#fab-nfc{position:fixed;right:70px;bottom:80px;z-index:35;background:var(--s2);border:1px solid var(--nfc);color:var(--nfc);width:42px;height:42px;border-radius:50%;font-size:17px;cursor:pointer;box-shadow:0 4px 14px #22D3EE15;display:flex;align-items:center;justify-content:center;transition:all .15s}
-#fab-nfc.active{background:#22D3EE20;animation:pnfc 1.5s ease-in-out infinite}
+/* ════════════════════════════════════════════
+   INVENTORY
+════════════════════════════════════════════ */
+#itbar{
+  padding:10px 12px;display:flex;gap:6px;flex-wrap:wrap;align-items:center;
+  position:sticky;top:52px;z-index:40;background:var(--bg);
+  border-bottom:1px solid var(--b1);
+}
+.ctabs{display:flex;gap:4px;overflow-x:auto;-ms-overflow-style:none;scrollbar-width:none}
+.ctabs::-webkit-scrollbar{display:none}
+.ct{background:none;border:1px solid var(--b1);color:var(--t3);
+  font-family:var(--mono);font-size:9px;padding:5px 10px;border-radius:20px;
+  cursor:pointer;white-space:nowrap;display:flex;align-items:center;gap:4px;transition:all .15s}
+.ct.on{background:#22D3EE12;border-color:var(--nfc);color:var(--nfc)}
+.ctcnt{background:var(--s2);border-radius:10px;padding:1px 5px;font-size:8px}
+#srch-w{flex:1;min-width:100px;position:relative;display:flex;align-items:center}
+#srch-w .si{position:absolute;left:9px;color:var(--t3);font-size:13px}
+#srch{width:100%;background:var(--s2);border:1px solid var(--b1);border-radius:20px;
+  color:var(--t1);font-family:var(--mono);font-size:11px;padding:7px 28px 7px 26px;outline:none;transition:border-color .15s}
+#srch:focus{border-color:var(--b2)}
+#srch-x{position:absolute;right:9px;background:none;border:none;color:var(--t3);cursor:pointer;font-size:10px;display:none}
 
-/* ── ITEM CARDS ──────────────────── */
-#igrid{padding:12px;display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:10px}
-.icard{background:var(--s1);border-radius:var(--r);border:1px solid var(--b1);border-left:5px solid;padding:12px 10px;cursor:pointer;display:flex;flex-direction:column;gap:8px;animation:fadeUp .2s ease both;position:relative;overflow:hidden;transition:transform .1s}
-.icard:active{transform:scale(.97)}
-.icard::before{content:'';position:absolute;top:0;left:0;right:0;height:55px;opacity:.07;pointer-events:none}
-.icard.tool      {border-left-color:var(--tool)}
-.icard.tool::before{background:var(--tool)}
-.icard.book      {border-left-color:var(--book)}
-.icard.book::before{background:var(--book)}
-.icard.electronic{border-left-color:var(--elec)}
-.icard.electronic::before{background:var(--elec)}
+/* ── CARDS GRID ── */
+#igrid{padding:10px;display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px}
 
-.itop{display:flex;justify-content:space-between;align-items:flex-start;gap:4px}
-.cba{font-family:var(--mono);font-size:8px;padding:3px 7px;border-radius:4px;border:1px solid;letter-spacing:.5px;flex-shrink:0}
-.cba.tool      {color:var(--tool);border-color:#FF572240;background:#FF572212}
-.cba.book      {color:var(--book);border-color:#0EA5E940;background:#0EA5E912}
-.cba.electronic{color:var(--elec);border-color:#84CC1640;background:#84CC1612}
-.sbadges{display:flex;gap:3px;flex-wrap:wrap;justify-content:flex-end}
-.sb{font-family:var(--mono);font-size:7px;border:1px solid;border-radius:3px;padding:2px 5px;letter-spacing:.5px}
-.sb.out{color:var(--err);border-color:#EF444440;background:#EF444410}
-.sb.low{color:var(--warn);border-color:#F9731640;background:#F9731610}
-.sb.nfc{color:var(--nfc);border-color:#22D3EE40;background:#22D3EE10}
+.ic{
+  background:var(--s1);border-radius:var(--r);
+  border:1px solid var(--b1);
+  padding:12px;cursor:pointer;display:flex;flex-direction:column;gap:9px;
+  animation:fadeUp .25s ease both;transition:transform .1s,border-color .15s;
+  position:relative;overflow:hidden;
+}
+.ic:active{transform:scale(.96)}
+/* neon glow on left + top gradient by zone */
+.ic::before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px;border-radius:var(--r) 0 0 var(--r)}
+.ic::after{content:'';position:absolute;top:0;left:0;right:0;height:40%;opacity:.06;pointer-events:none}
+.ic.zA::before{background:var(--zA)}.ic.zA::after{background:var(--zA)}
+.ic.zB::before{background:var(--zB)}.ic.zB::after{background:var(--zB)}
+.ic.zC::before{background:var(--zC)}.ic.zC::after{background:var(--zC)}
+.ic.zD::before{background:var(--zD)}.ic.zD::after{background:var(--zD)}
+.ic.zE::before{background:var(--zE)}.ic.zE::after{background:var(--zE)}
+.ic.znone::before{background:var(--b2)}.ic.znone::after{background:transparent}
+.ic:hover{border-color:var(--b2)}
 
-.iname{font-weight:800;font-size:13px;color:#fff;line-height:1.25}
-.iloc{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:5px;font-family:var(--mono);font-size:9px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* card top */
+.ic-top{display:flex;justify-content:space-between;align-items:flex-start;padding-left:8px}
+.ic-icon{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.ic-badges{display:flex;flex-direction:column;gap:3px;align-items:flex-end}
+.ib{font-family:var(--mono);font-size:7px;border:1px solid;border-radius:4px;padding:2px 5px;letter-spacing:.5px;white-space:nowrap}
+.ib.out{color:var(--err);border-color:#EF444440;background:#EF444410}
+.ib.low{color:var(--warn);border-color:#FBBF2440;background:#FBBF2410}
+.ib.nfc{color:var(--nfc);border-color:#22D3EE40;background:#22D3EE10}
 
-.iqrow{display:flex;align-items:center;gap:5px;margin-top:2px}
-.qbtn{background:var(--s2);border:1px solid var(--b2);color:var(--t2);width:26px;height:26px;border-radius:7px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;font-family:var(--mono);transition:all .1s;flex-shrink:0;line-height:1}
-.qbtn:hover{color:var(--amber);border-color:#FFB80040;background:#FFB80010}
-.qnum{font-family:var(--disp);line-height:1;min-width:32px;text-align:center}
-.qnum.qok {color:var(--amber);font-size:34px}
-.qnum.qlow{color:var(--warn);font-size:34px}
-.qnum.qout{color:var(--err);font-size:34px}
-.qunit{font-family:var(--mono);font-size:8px;color:var(--t3)}
+/* card name & loc */
+.ic-name{font-weight:700;font-size:13px;color:var(--t1);line-height:1.25;padding-left:8px}
+.ic-loc{display:inline-flex;align-items:center;gap:4px;padding:3px 8px 3px 6px;
+  border-radius:6px;font-family:var(--mono);font-size:9px;margin-left:4px;
+  max-width:calc(100% - 8px);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
-/* ── LIEUX TAB ───────────────────── */
-#lx-content{padding:12px;display:flex;flex-direction:column;gap:10px}
-#lx-acts{display:flex;gap:8px}
-.bsm{background:none;border:1px solid var(--b2);color:var(--t2);font-family:var(--mono);font-size:10px;padding:8px 12px;border-radius:8px;cursor:pointer;display:flex;align-items:center;gap:6px;transition:all .15s;letter-spacing:.5px}
-.bsm.ambi{border-color:#FFB80040;color:var(--amber);background:#FFB80010}
-.bsm.nfci{border-color:#22D3EE40;color:var(--nfc);background:#22D3EE10}
-#rooms-list{display:flex;flex-direction:column;gap:8px}
-.rcard{background:var(--s1);border:1px solid var(--b1);border-radius:var(--r);overflow:hidden}
-.rhdr{display:flex;align-items:center;gap:10px;padding:13px 14px;cursor:pointer;user-select:none}
-.rdot{width:13px;height:13px;border-radius:4px;flex-shrink:0}
-.rname{font-weight:800;font-size:14px;flex:1}
-.rcnt{font-family:var(--mono);font-size:10px;color:var(--t3)}
-.rtog{font-size:11px;color:var(--t3);transition:transform .2s}
-.rcard.exp .rtog{transform:rotate(180deg)}
-.rlocs{display:none;border-top:1px solid var(--b1)}
-.rcard.exp .rlocs{display:block}
-.locrow{display:flex;align-items:center;gap:10px;padding:11px 14px;border-bottom:1px solid var(--b1);cursor:pointer;transition:background .1s}
-.locrow:last-of-type{border-bottom:none}
-.locrow:hover{background:var(--s2)}
-.lrico{font-size:16px}
-.lrinf{flex:1}
-.lrname{font-weight:700;font-size:13px}
-.lrsub{font-family:var(--mono);font-size:9px;color:var(--t3);margin-top:1px}
-.nfcpill{font-size:9px;padding:3px 8px;border-radius:4px;font-family:var(--mono);letter-spacing:.5px}
-.nfcpill.yes{color:var(--nfc);background:#22D3EE10;border:1px solid #22D3EE30}
-.nfcpill.no {color:var(--t3);background:var(--s2);border:1px solid var(--b1)}
-.radd-loc{width:100%;background:none;border:none;border-top:1px solid var(--b1);color:var(--t3);font-family:var(--mono);font-size:10px;padding:11px 14px;cursor:pointer;text-align:left;display:flex;align-items:center;gap:6px;transition:color .15s}
-.radd-loc:hover{color:var(--amber)}
+/* quantity row */
+.ic-qrow{display:flex;align-items:center;gap:5px;padding-left:8px;margin-top:auto}
+.qb{background:var(--s2);border:1px solid var(--b2);color:var(--t2);
+  width:26px;height:26px;border-radius:8px;cursor:pointer;
+  font-size:16px;display:flex;align-items:center;justify-content:center;
+  transition:all .1s;flex-shrink:0;line-height:1;font-family:var(--mono)}
+.qb:hover{color:#fff;border-color:var(--nfc);background:#22D3EE15}
+.qn{font-family:var(--disp);line-height:1;min-width:32px;text-align:center;font-weight:800}
+.qn.qok {color:var(--t1);font-size:28px}
+.qn.qlow{color:var(--warn);font-size:28px}
+.qn.qout{color:var(--err);font-size:28px}
+.qu{font-family:var(--mono);font-size:8px;color:var(--t3)}
 
-/* ── CARTE TAB ───────────────────── */
-#map-content{padding:12px}
-#map-info{background:var(--s2);border:1px dashed var(--b2);border-radius:var(--r);padding:12px;margin-bottom:12px;font-family:var(--mono);font-size:10px;color:var(--t3);line-height:1.6}
-#map-canvas{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
-.mrm{border-radius:8px;padding:12px 10px;cursor:pointer;display:flex;flex-direction:column;gap:6px;transition:all .15s;border:1px solid transparent;position:relative}
-.mrm:hover{filter:brightness(1.15)}
-.mrm .mr-em{font-size:22px;line-height:1}
-.mrm .mr-nm{font-weight:800;font-size:12px;color:#fff;line-height:1.2}
-.mrm .mr-ct{font-family:var(--mono);font-size:9px;color:rgba(255,255,255,.5)}
-.mrm.span2{grid-column:span 2}
-.mrm.span3{grid-column:span 3}
-#map-add-rm{width:100%;background:none;border:1px dashed var(--b2);color:var(--t3);font-family:var(--mono);font-size:10px;padding:14px;border-radius:var(--r);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:all .15s}
-#map-add-rm:hover{border-color:var(--amber);color:var(--amber)}
+/* ════════════════════════════════════════════
+   SVG MAP TAB
+════════════════════════════════════════════ */
+#map-wrap{padding:10px}
+#map-hint{background:var(--s2);border:1px solid var(--b1);border-radius:10px;
+  padding:10px 12px;margin-bottom:10px;font-family:var(--mono);font-size:9px;
+  color:var(--t3);line-height:1.7;display:flex;gap:8px;align-items:flex-start}
+#map-svg-wrap{background:var(--s1);border:1px solid var(--b1);border-radius:var(--r);
+  overflow:hidden;margin-bottom:10px}
+#plan{width:100%;height:auto;display:block}
 
-/* ── SHEETS (modals) ─────────────── */
-.ov{display:none;position:fixed;inset:0;background:#000000cc;z-index:100;align-items:flex-end;justify-content:center}
-.ov.show{display:flex}
-.sheet{background:var(--s1);border-radius:18px 18px 0 0;border-top:1px solid var(--b1);width:100%;max-width:540px;max-height:92vh;overflow-y:auto;padding:18px 16px 34px;animation:slideUp .25s ease}
-.shdrag{width:36px;height:4px;background:var(--b2);border-radius:2px;margin:0 auto 14px}
-.shhdr{display:flex;align-items:center;gap:10px;margin-bottom:16px}
-.shtitle{flex:1;font-weight:800;font-size:16px}
-.shclose{background:var(--s2);border:none;color:var(--t2);width:30px;height:30px;border-radius:50%;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center}
+/* SVG elements */
+.rm-rect{fill-opacity:.08;stroke-width:1.5;cursor:pointer;transition:fill-opacity .2s}
+.rm-rect:hover{fill-opacity:.16}
+.rm-label{font-family:'Syne',sans-serif;font-weight:800;font-size:11px;fill-opacity:.9;letter-spacing:.5px}
+.rm-sublabel{font-family:'JetBrains Mono',monospace;font-size:7px;fill-opacity:.5}
+.loc-rect{stroke-width:1;cursor:pointer;fill-opacity:.18;transition:all .2s}
+.loc-rect:hover{fill-opacity:.35}
+.loc-label{font-family:'JetBrains Mono',monospace;font-size:7px;text-anchor:middle;fill-opacity:.8}
+/* BLINK animation for found item */
+@keyframes locblink{0%,100%{fill-opacity:.18;filter:none}50%{fill-opacity:.7;filter:drop-shadow(0 0 6px currentColor)}}
+.loc-blink{animation:locblink 1s ease-in-out infinite}
+@keyframes pulseRed{0%,100%{fill-opacity:.2}50%{fill-opacity:.85;filter:drop-shadow(0 0 8px #EF4444)}}
+.loc-found{animation:pulseRed 0.8s ease-in-out infinite}
 
-/* ── FORM ELEMENTS ───────────────── */
-.ff{display:flex;flex-direction:column;gap:13px}
-.fl{font-size:9px;color:var(--t3);letter-spacing:1.5px;font-family:var(--mono);margin-bottom:4px}
-input,select,textarea{background:var(--s2);border:1px solid var(--b1);border-radius:9px;color:var(--t1);font-family:var(--body);font-size:14px;padding:11px 13px;width:100%;outline:none;transition:border-color .15s}
+/* map legend */
+#map-legend{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.ml{display:flex;align-items:center;gap:6px;background:var(--s1);border:1px solid var(--b1);
+  border-radius:8px;padding:6px 10px;font-family:var(--mono);font-size:9px;color:var(--t2);cursor:pointer;transition:all .15s}
+.ml:hover{border-color:var(--b2)}
+.ml-dot{width:8px;height:8px;border-radius:2px}
+.ml-cnt{color:var(--t3);font-size:8px}
+
+/* ════════════════════════════════════════════
+   NFC TAB
+════════════════════════════════════════════ */
+#nfc-wrap{padding:12px;display:flex;flex-direction:column;gap:10px}
+.nfc-card{background:var(--s1);border:1px solid var(--b1);border-radius:var(--r);padding:16px;cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:14px}
+.nfc-card:hover{border-color:var(--b2);background:var(--s2)}
+.nfc-card-icon{width:50px;height:50px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0}
+.nfc-card-txt .t{font-weight:700;font-size:14px;color:var(--t1);margin-bottom:3px}
+.nfc-card-txt .s{font-family:var(--mono);font-size:9px;color:var(--t3);line-height:1.5}
+.nfc-card.ranger{border-color:#22D3EE30}
+.nfc-card.ranger .nfc-card-icon{background:#22D3EE15;border:1px solid #22D3EE30;color:var(--nfc)}
+.nfc-card.trouver{border-color:#3B82F630}
+.nfc-card.trouver .nfc-card-icon{background:#3B82F615;border:1px solid #3B82F630;color:var(--zA)}
+.nfc-card.ecrire{border-color:#A855F730}
+.nfc-card.ecrire .nfc-card-icon{background:#A855F715;border:1px solid #A855F730;color:var(--zD)}
+
+/* ════════════════════════════════════════════
+   LIEUX TAB
+════════════════════════════════════════════ */
+#lx-wrap{padding:10px;display:flex;flex-direction:column;gap:8px}
+#lx-acts{display:flex;gap:8px;margin-bottom:2px}
+.bxs{background:none;border:1px solid var(--b2);color:var(--t2);
+  font-family:var(--mono);font-size:9px;padding:8px 12px;border-radius:8px;
+  cursor:pointer;display:flex;align-items:center;gap:5px;transition:all .15s}
+.bxs:hover{border-color:var(--nfc);color:var(--nfc)}
+.zone-card{background:var(--s1);border-radius:var(--r);border-left:4px solid;overflow:hidden}
+.zone-hdr{display:flex;align-items:center;gap:10px;padding:13px 14px;cursor:pointer}
+.zone-em{font-size:20px}
+.zone-nm{font-weight:800;font-size:14px;flex:1}
+.zone-cnt{font-family:var(--mono);font-size:9px;color:var(--t3)}
+.zone-chev{font-size:10px;color:var(--t3);transition:transform .2s}
+.zone-card.exp .zone-chev{transform:rotate(180deg)}
+.zone-locs{display:none;border-top:1px solid var(--b1)}
+.zone-card.exp .zone-locs{display:block}
+.lrow{display:flex;align-items:center;gap:10px;padding:10px 14px;
+  border-bottom:1px solid var(--b1);cursor:pointer;transition:background .1s}
+.lrow:last-of-type{border-bottom:none}
+.lrow:hover{background:var(--s2)}
+.lrow-em{font-size:16px}
+.lrow-inf{flex:1}
+.lrow-nm{font-weight:600;font-size:13px}
+.lrow-sub{font-family:var(--mono);font-size:9px;color:var(--t3);margin-top:2px}
+.lrow-nfc{font-family:var(--mono);font-size:8px;border:1px solid;border-radius:4px;padding:2px 6px}
+.lrow-nfc.y{color:var(--nfc);border-color:#22D3EE30;background:#22D3EE0c}
+.lrow-nfc.n{color:var(--t3);border-color:var(--b1)}
+.zone-add-loc{width:100%;background:none;border:none;border-top:1px solid var(--b1);
+  color:var(--t3);font-family:var(--mono);font-size:9px;padding:10px 14px;
+  cursor:pointer;text-align:left;display:flex;align-items:center;gap:5px;transition:color .15s}
+.zone-add-loc:hover{color:var(--nfc)}
+
+/* ════════════════════════════════════════════
+   BOTTOM SHEETS
+════════════════════════════════════════════ */
+.ov{display:none;position:fixed;inset:0;background:#000000d0;z-index:100;align-items:flex-end;justify-content:center}
+.ov.on{display:flex}
+.sh{background:var(--s1);border-radius:20px 20px 0 0;border-top:1px solid var(--b1);
+  width:100%;max-width:600px;max-height:92vh;overflow-y:auto;
+  padding:14px 16px 34px;animation:slideUp .25s ease}
+.drag{width:40px;height:4px;background:var(--b2);border-radius:2px;margin:0 auto 14px}
+.shhdr{display:flex;align-items:center;gap:10px;margin-bottom:18px}
+.sht{flex:1;font-family:var(--disp);font-weight:800;font-size:17px;letter-spacing:1px}
+.shx{background:var(--s2);border:none;color:var(--t2);width:32px;height:32px;
+  border-radius:50%;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center}
+
+/* form */
+.ff{display:flex;flex-direction:column;gap:14px}
+.fl{font-size:8px;color:var(--t3);letter-spacing:1.5px;font-family:var(--mono);margin-bottom:4px;display:block}
+input,select,textarea{background:var(--s2);border:1px solid var(--b1);border-radius:10px;
+  color:var(--t1);font-family:var(--body);font-size:14px;padding:11px 13px;width:100%;outline:none;transition:border-color .15s}
 input:focus,select:focus,textarea:focus{border-color:var(--b2)}
-textarea{resize:vertical;min-height:68px}
+textarea{resize:vertical;min-height:70px}
 .fg2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .brow{display:flex;gap:8px}
-.bmain{flex:1;background:var(--amber);color:#000;border:none;font-family:var(--body);font-weight:800;font-size:14px;padding:13px;border-radius:10px;cursor:pointer;transition:all .15s}
-.bmain:hover{background:#ffc929}
-.bmain:disabled{opacity:.4;cursor:not-allowed}
-.bsec{flex:1;background:var(--s2);color:var(--t2);border:1px solid var(--b2);font-family:var(--body);font-weight:600;font-size:14px;padding:13px;border-radius:10px;cursor:pointer}
-.bdel{width:100%;background:#EF444410;color:var(--err);border:1px solid #EF444430;font-family:var(--body);font-weight:600;font-size:14px;padding:12px;border-radius:10px;cursor:pointer;margin-top:4px}
+.bmain{flex:1;background:linear-gradient(135deg,#3B82F6,#A855F7);color:#fff;border:none;
+  font-family:var(--disp);font-weight:800;font-size:15px;letter-spacing:1px;
+  padding:13px;border-radius:11px;cursor:pointer;transition:opacity .15s}
+.bmain:hover{opacity:.9}
+.bmain:disabled{opacity:.35;cursor:not-allowed}
+.bsec{flex:1;background:var(--s2);color:var(--t2);border:1px solid var(--b2);
+  font-family:var(--disp);font-weight:700;font-size:15px;letter-spacing:1px;
+  padding:13px;border-radius:11px;cursor:pointer;transition:all .15s}
+.bsec:hover{color:var(--t1);border-color:var(--b2)}
+.bdel{width:100%;background:#EF444410;color:var(--err);border:1px solid #EF444430;
+  font-family:var(--disp);font-weight:700;font-size:14px;
+  padding:12px;border-radius:11px;cursor:pointer;margin-top:4px}
 
-/* ── VIEW SHEET ──────────────────── */
-.vcat-bar{height:5px;border-radius:3px;margin-bottom:14px}
-.vname{font-weight:800;font-size:20px;color:#fff;margin-bottom:5px;line-height:1.2}
-.vloc-badge{display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border-radius:7px;font-family:var(--mono);font-size:11px;margin-bottom:14px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.vi-grid{border:1px solid var(--b1);border-radius:9px;overflow:hidden;margin-bottom:14px}
-.vi-row{display:flex;justify-content:space-between;align-items:center;padding:10px 13px;border-bottom:1px solid var(--b1)}
-.vi-row:last-child{border-bottom:none}
-.vi-l{font-family:var(--mono);font-size:9px;color:var(--t3);letter-spacing:1px}
-.vi-v{font-size:13px;color:var(--t2)}
-.bqrow{display:flex;align-items:center;justify-content:center;gap:18px;padding:16px 0}
-.bqbtn{background:var(--s2);border:1px solid var(--b2);color:var(--t2);width:50px;height:50px;border-radius:13px;cursor:pointer;font-size:28px;font-family:var(--mono);transition:all .1s;display:flex;align-items:center;justify-content:center}
-.bqbtn:hover{color:var(--amber);border-color:#FFB80040}
-.bqctr{text-align:center}
-.bqnum{font-family:var(--disp);font-size:62px;line-height:1}
-.bqunit{font-family:var(--mono);font-size:10px;color:var(--t3)}
-.alert-b{border-radius:7px;padding:9px 13px;font-size:11px;margin-bottom:12px;font-family:var(--mono)}
+/* ════════════════════════════════════════════
+   ITEM VIEW SHEET
+════════════════════════════════════════════ */
+.v-zone-bar{height:5px;border-radius:3px;margin-bottom:14px}
+.v-header{display:flex;align-items:flex-start;gap:12px;margin-bottom:16px}
+.v-icon{width:56px;height:56px;border-radius:15px;display:flex;align-items:center;justify-content:center;font-size:28px;flex-shrink:0}
+.v-meta{flex:1}
+.v-name{font-family:var(--disp);font-weight:800;font-size:18px;line-height:1.15;color:var(--t1);margin-bottom:4px}
+.v-cat{font-family:var(--mono);font-size:9px;color:var(--t3);letter-spacing:1px}
+.v-loc-big{display:flex;align-items:center;gap:10px;padding:12px;border-radius:11px;margin-bottom:14px}
+.v-loc-em{font-size:24px}
+.v-loc-txt .rm{font-weight:700;font-size:13px}
+.v-loc-txt .loc{font-family:var(--mono);font-size:10px;margin-top:2px;opacity:.7}
+.v-loc-none{padding:12px;border-radius:11px;background:var(--s2);border:1px dashed var(--b2);
+  font-family:var(--mono);font-size:10px;color:var(--t3);text-align:center;margin-bottom:14px}
+.bq-row{display:flex;align-items:center;justify-content:center;gap:20px;padding:14px 0}
+.bqb{background:var(--s2);border:1px solid var(--b2);color:var(--t2);
+  width:52px;height:52px;border-radius:14px;cursor:pointer;font-size:28px;
+  font-family:var(--mono);display:flex;align-items:center;justify-content:center;transition:all .1s}
+.bqb:hover{color:#fff;border-color:var(--nfc)}
+.bq-ctr{text-align:center}
+.bq-num{font-family:var(--disp);font-size:58px;line-height:1;font-weight:800}
+.bq-u{font-family:var(--mono);font-size:9px;color:var(--t3);letter-spacing:1px}
+.alert-b{border-radius:9px;padding:10px 13px;font-family:var(--mono);font-size:10px;margin-bottom:12px;display:flex;align-items:center;gap:8px}
 .alert-b.out{background:#EF444410;border:1px solid #EF444430;color:var(--err)}
-.alert-b.low{background:#F9731610;border:1px solid #F9731630;color:var(--warn)}
+.alert-b.low{background:#FBBF2410;border:1px solid #FBBF2430;color:var(--warn)}
+.info-grid{border:1px solid var(--b1);border-radius:11px;overflow:hidden;margin-bottom:14px}
+.ir{display:flex;justify-content:space-between;align-items:center;padding:10px 13px;border-bottom:1px solid var(--b1)}
+.ir:last-child{border-bottom:none}
+.ir .k{font-family:var(--mono);font-size:8px;color:var(--t3);letter-spacing:1px}
+.ir .v{font-size:13px;color:var(--t2)}
 
-/* NFC section in view */
-.nfc-sec{background:var(--s2);border:1px solid var(--b1);border-radius:9px;padding:12px;margin-bottom:12px}
-.nfc-st{font-family:var(--mono);font-size:9px;color:var(--t3);letter-spacing:2px;margin-bottom:10px}
-.nfc-tagid{background:var(--bg);border:1px solid var(--b1);border-radius:6px;padding:7px 10px;font-family:var(--mono);font-size:10px;color:var(--t3);margin-bottom:9px;word-break:break-all}
-.nfc-btnw{width:100%;background:#22D3EE10;border:1px solid #22D3EE30;color:var(--nfc);font-family:var(--mono);font-size:10px;padding:10px;border-radius:8px;cursor:pointer;letter-spacing:1px;display:flex;align-items:center;justify-content:center;gap:8px;transition:all .15s;margin-bottom:8px}
-.nfc-btnw:hover{background:#22D3EE1a}
-.loc-scan-btn{width:100%;background:#22D3EE10;border:1px solid #22D3EE30;color:var(--nfc);font-family:var(--mono);font-size:10px;padding:10px;border-radius:8px;cursor:pointer;letter-spacing:1px;display:flex;align-items:center;justify-content:center;gap:8px;transition:all .15s}
-.loc-scan-btn:hover{background:#22D3EE1a}
-.cur-loc-show{display:flex;align-items:center;gap:8px;padding:9px 12px;border-radius:8px;margin-bottom:9px;font-family:var(--mono);font-size:11px}
+/* NFC sections */
+.nfcs{background:var(--s2);border:1px solid var(--b1);border-radius:11px;padding:12px;margin-bottom:12px}
+.nfcs-t{font-family:var(--mono);font-size:8px;color:var(--t3);letter-spacing:2px;margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.nfcs-id{background:var(--bg);border:1px solid var(--b1);border-radius:7px;padding:7px 10px;
+  font-family:var(--mono);font-size:9px;color:var(--t3);margin-bottom:9px;word-break:break-all}
+.nfc-btn-a{width:100%;background:transparent;border:1px solid #22D3EE30;color:var(--nfc);
+  font-family:var(--mono);font-size:9px;padding:10px;border-radius:9px;cursor:pointer;
+  letter-spacing:1px;display:flex;align-items:center;justify-content:center;gap:8px;transition:all .15s;margin-bottom:7px}
+.nfc-btn-a:hover{background:#22D3EE15}
+.nfc-btn-a:last-child{margin-bottom:0}
 
-/* NFC overlay */
-#nfc-ov{display:none;position:fixed;inset:0;background:#000000f2;z-index:200;flex-direction:column;align-items:center;justify-content:center;gap:18px}
-#nfc-ov.show{display:flex}
-.nfc-ring{width:110px;height:110px;border-radius:50%;border:2px solid var(--nfc);display:flex;align-items:center;justify-content:center;font-size:44px;position:relative;animation:nring 2s ease-in-out infinite}
-.nfc-ring::before,.nfc-ring::after{content:'';position:absolute;border-radius:50%;border:1px solid var(--nfc)}
-.nfc-ring::before{inset:-14px;opacity:.35;animation:nring 2s ease-in-out infinite .3s}
-.nfc-ring::after{inset:-28px;opacity:.15;animation:nring 2s ease-in-out infinite .6s}
-#nov-title{color:var(--nfc);font-family:var(--disp);font-size:22px;letter-spacing:3px;text-align:center}
-#nov-sub{color:var(--t3);font-family:var(--mono);font-size:11px;text-align:center;padding:0 30px}
-.nfc-cancel-b{background:none;border:1px solid var(--b2);color:var(--t3);font-family:var(--mono);font-size:11px;padding:10px 28px;border-radius:20px;cursor:pointer;margin-top:8px}
+/* Show on map button */
+.map-btn{width:100%;background:transparent;border:1px solid #3B82F630;color:var(--zA);
+  font-family:var(--mono);font-size:9px;padding:10px;border-radius:9px;cursor:pointer;
+  letter-spacing:1px;display:flex;align-items:center;justify-content:center;gap:8px;
+  transition:all .15s;margin-bottom:12px}
+.map-btn:hover{background:#3B82F615}
 
-/* Toast */
-#toast{position:fixed;top:64px;left:50%;transform:translateX(-50%);z-index:300;opacity:0;transition:opacity .2s;pointer-events:none;white-space:nowrap}
-#toast.show{opacity:1}
-.ti{background:var(--s2);border:1px solid var(--b2);border-radius:20px;padding:10px 18px;font-family:var(--mono);font-size:12px;display:flex;align-items:center;gap:8px;box-shadow:0 4px 20px #000}
+/* ════════════════════════════════════════════
+   NFC SCAN OVERLAY
+════════════════════════════════════════════ */
+#nfc-ov{display:none;position:fixed;inset:0;background:#00000006;
+  -webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);
+  background-color:#060810e8;z-index:200;
+  flex-direction:column;align-items:center;justify-content:center;gap:20px;padding:20px}
+#nfc-ov.on{display:flex}
+.nring-wrap{position:relative;display:flex;align-items:center;justify-content:center;margin-bottom:8px}
+.nring{width:120px;height:120px;border-radius:50%;
+  border:2px solid var(--nfc);
+  display:flex;align-items:center;justify-content:center;font-size:50px;
+  box-shadow:0 0 30px #22D3EE30;
+  animation:spinRing 4s linear infinite}
+.nring-r1,.nring-r2{position:absolute;border-radius:50%;border:1px solid var(--nfc);pointer-events:none}
+.nring-r1{inset:-18px;opacity:.25;animation:nfcPulse 2s ease-in-out infinite}
+.nring-r2{inset:-36px;opacity:.1;animation:nfcPulse 2s ease-in-out infinite .4s}
+#nov-step{font-family:var(--mono);font-size:8px;color:var(--nfc);letter-spacing:3px}
+#nov-title{font-family:var(--disp);font-weight:800;font-size:24px;letter-spacing:2px;text-align:center;color:#fff}
+#nov-sub{font-family:var(--mono);font-size:10px;color:var(--t2);text-align:center;max-width:280px;line-height:1.6}
+.nfc-progress{display:flex;gap:8px;align-items:center}
+.npd{width:40px;height:4px;border-radius:2px;background:var(--b2);transition:background .3s}
+.npd.done{background:var(--nfc)}
+.npd.active{background:var(--nfc);animation:nfcbar 1s ease-in-out infinite}
+#nov-cancel{background:none;border:1px solid var(--b2);color:var(--t3);
+  font-family:var(--mono);font-size:10px;padding:10px 28px;border-radius:20px;cursor:pointer;margin-top:4px}
 
-/* Confirm */
-#conf-ov{display:none;position:fixed;inset:0;background:#000000cc;z-index:150;align-items:center;justify-content:center;padding:16px}
-#conf-ov.show{display:flex}
-#conf-box{background:var(--s1);border:1px solid var(--b2);border-radius:16px;padding:28px;max-width:310px;width:100%;text-align:center;animation:slideUp .2s ease}
+/* ════════════════════════════════════════════
+   CONFIRM / TOAST
+════════════════════════════════════════════ */
+#conf-ov{display:none;position:fixed;inset:0;background:#000000c0;z-index:150;align-items:center;justify-content:center;padding:16px}
+#conf-ov.on{display:flex}
+#conf-box{background:var(--s1);border:1px solid var(--b2);border-radius:18px;padding:28px;max-width:300px;width:100%;text-align:center;animation:slideUp .2s ease}
 #conf-box .ci{font-size:40px;margin-bottom:8px}
-#conf-box .ct{color:var(--err);font-weight:800;font-size:18px;margin-bottom:6px}
-#conf-box .cs{color:var(--t3);font-size:12px;margin-bottom:20px;font-family:var(--mono)}
+#conf-box .ct{font-family:var(--disp);color:var(--err);font-size:20px;font-weight:800;margin-bottom:6px;letter-spacing:1px}
+#conf-box .cs{font-family:var(--mono);color:var(--t3);font-size:10px;margin-bottom:22px}
+#toast{position:fixed;top:60px;left:50%;transform:translateX(-50%);
+  z-index:300;opacity:0;transition:opacity .2s;pointer-events:none;white-space:nowrap}
+#toast.on{opacity:1}
+.ti{background:var(--s2);border:1px solid var(--b2);border-radius:20px;
+  padding:10px 18px;font-family:var(--mono);font-size:11px;
+  display:flex;align-items:center;gap:8px;box-shadow:0 4px 24px #000a}
 
-/* Color pills */
-.cpills{display:flex;gap:8px;flex-wrap:wrap}
-.cpill{width:30px;height:30px;border-radius:50%;cursor:pointer;border:2px solid transparent;transition:all .15s;flex-shrink:0}
-.cpill.sel{border-color:#fff;transform:scale(1.15)}
+/* ════════════════════════════════════════════
+   ROOM / LOC FORM COLOR PICKER
+════════════════════════════════════════════ */
+.zone-opts{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-top:4px}
+.zo{height:38px;border-radius:9px;cursor:pointer;border:2px solid transparent;transition:all .15s;position:relative;display:flex;align-items:center;justify-content:center;font-size:16px}
+.zo.sel{border-color:#fff;transform:scale(1.08)}
+.emojis-row{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
+.emo-btn{width:38px;height:38px;background:var(--s2);border:1px solid var(--b1);border-radius:9px;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;transition:all .15s}
+.emo-btn.sel{border-color:var(--nfc);background:#22D3EE15}
 
-/* Map room detail sheet */
-.rm-items-list{display:flex;flex-direction:column;gap:8px}
-.rm-item-row{background:var(--s2);border-radius:8px;padding:10px 12px;display:flex;align-items:center;gap:10px;cursor:pointer}
-.rim-cat{font-size:16px}
-.rim-inf{flex:1}
-.rim-name{font-weight:700;font-size:13px}
-.rim-loc{font-family:var(--mono);font-size:9px;color:var(--t3);margin-top:1px}
-.rim-qty{font-family:var(--disp);font-size:22px}
+/* ════════════════════════════════════════════
+   EMPTY STATE
+════════════════════════════════════════════ */
+.emp{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 20px;gap:10px;grid-column:1/-1}
+.emp .ei{font-size:44px;opacity:.12}
+.emp .et{font-family:var(--mono);font-size:9px;color:var(--t3);letter-spacing:2px}
 
-.empty-st{text-align:center;padding:48px 20px}
-.empty-st .ei{font-size:44px;opacity:.13;margin-bottom:10px}
-.empty-st .et{color:var(--t3);font-family:var(--mono);font-size:10px;letter-spacing:2px}
-
+/* ════════════════════════════════════════════
+   ANIMATIONS
+════════════════════════════════════════════ */
 @keyframes fadeUp  {from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
-@keyframes slideUp {from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:translateY(0)}}
-@keyframes pnfc    {0%,100%{box-shadow:0 0 0 0 #22D3EE20}50%{box-shadow:0 0 0 8px transparent}}
-@keyframes nring   {0%,100%{opacity:1}50%{opacity:.25}}
+@keyframes slideUp {from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
+@keyframes spinRing{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+@keyframes nfcPulse{0%,100%{opacity:.1}50%{opacity:.4}}
+@keyframes nfcbar  {0%,100%{opacity:1}50%{opacity:.3}}
+
+@media(max-width:400px){
+  .fg2{grid-template-columns:1fr}
+  #hstats{display:none}
+}
 </style>
 </head>
 <body>
 
 <!-- HEADER -->
 <header id="hdr">
-  <div id="logo">T&T</div>
-  <div id="aname"><div class="n">TAP &amp; TRACK</div><div class="s">NFC INVENTORY SYSTEM</div></div>
+  <div id="logo">SS⬡</div>
+  <div id="aname">
+    <div class="n">SMART-STORAGE</div>
+    <div class="s">NFC INVENTORY SYSTEM</div>
+  </div>
   <div id="hstats">
-    <div class="hst"><div class="v" id="st-tot" style="color:var(--amber)">0</div><div class="l">ARTICLES</div></div>
+    <div class="hst"><div class="v" id="st-tot" style="color:var(--nfc)">0</div><div class="l">ARTICLES</div></div>
     <div class="hst"><div class="v" id="st-low" style="color:var(--warn)">0</div><div class="l">BAS</div></div>
     <div class="hst"><div class="v" id="st-out" style="color:var(--err)">0</div><div class="l">ÉPUISÉ</div></div>
   </div>
@@ -257,107 +413,159 @@ textarea{resize:vertical;min-height:68px}
 <!-- CONTENT -->
 <div id="content">
 
-  <!-- TAB: INVENTAIRE -->
-  <div class="tpanel active" id="tp-inv">
-    <div id="itb">
+  <!-- TAB STOCK -->
+  <div class="tp on" id="tp-stock">
+    <div id="itbar">
       <div class="ctabs">
-        <button class="ctab ca" data-cat="all">◈ TOUT <span class="cnt2" id="c-all">0</span></button>
-        <button class="ctab" data-cat="tool">⚙ OUTILS <span class="cnt2" id="c-tool">0</span></button>
-        <button class="ctab" data-cat="book">▣ LIVRES <span class="cnt2" id="c-book">0</span></button>
-        <button class="ctab" data-cat="electronic">⬡ COMPOS. <span class="cnt2" id="c-elec">0</span></button>
+        <button class="ct on" data-cat="all">◈ TOUT <span class="ctcnt" id="c-all">0</span></button>
+        <button class="ct" data-cat="tool">🛠️ OUTILS <span class="ctcnt" id="c-tool">0</span></button>
+        <button class="ct" data-cat="book">📚 LIVRES <span class="ctcnt" id="c-book">0</span></button>
+        <button class="ct" data-cat="electronic">⚡ COMPOS. <span class="ctcnt" id="c-elec">0</span></button>
+        <button class="ct" data-cat="cable">🔌 CÂBLES <span class="ctcnt" id="c-cable">0</span></button>
       </div>
-      <div id="sw2"><span class="si">⌕</span><input id="si2" placeholder="Rechercher…" oninput="onSearch(this.value)"><button id="sc2" onclick="clearSearch()">✕</button></div>
+      <div id="srch-w">
+        <span class="si">⌕</span>
+        <input id="srch" placeholder="Rechercher…" oninput="onSearch(this.value)">
+        <button id="srch-x" onclick="clearSearch()">✕</button>
+      </div>
     </div>
     <div id="igrid"></div>
   </div>
 
-  <!-- TAB: LIEUX -->
-  <div class="tpanel" id="tp-lx">
-    <div id="lx-content">
+  <!-- TAB MAP -->
+  <div class="tp" id="tp-map">
+    <div id="map-wrap">
+      <div id="map-hint">
+        <span>💡</span>
+        <span>Clique sur une pièce pour voir les objets. Quand tu trouves un article, son emplacement <strong style="color:var(--err)">clignote en rouge</strong> sur la carte.</span>
+      </div>
+      <div id="map-legend"></div>
+      <div id="map-svg-wrap">
+        <svg id="plan" viewBox="0 0 340 280" xmlns="http://www.w3.org/2000/svg">
+          <!-- Plan dessiné dynamiquement par JS -->
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB NFC -->
+  <div class="tp" id="tp-nfc">
+    <div id="nfc-wrap">
+      <div style="font-family:var(--disp);font-size:20px;letter-spacing:1px;color:var(--t1);padding:4px 0 8px;font-weight:800">ACTIONS NFC</div>
+
+      <div class="nfc-card ranger" onclick="startDoubleRanger()">
+        <div class="nfc-card-icon">⬡</div>
+        <div class="nfc-card-txt">
+          <div class="t">RANGER UN OBJET</div>
+          <div class="s">Scanne le tag de l'objet → puis le badge du tiroir.<br>L'emplacement est enregistré automatiquement.</div>
+        </div>
+        <span style="color:var(--t3);font-size:18px">›</span>
+      </div>
+
+      <div class="nfc-card trouver" onclick="startTrouver()">
+        <div class="nfc-card-icon">🔍</div>
+        <div class="nfc-card-txt">
+          <div class="t">TROUVER UN OBJET</div>
+          <div class="s">Scanne le tag d'un objet pour voir où il se trouve et le faire clignoter sur la carte.</div>
+        </div>
+        <span style="color:var(--t3);font-size:18px">›</span>
+      </div>
+
+      <div class="nfc-card ecrire" onclick="startEcrireMenu()">
+        <div class="nfc-card-icon">✍️</div>
+        <div class="nfc-card-txt">
+          <div class="t">ÉCRIRE UN TAG NFC</div>
+          <div class="s">Associe un tag NFC physique à un article ou un emplacement de ta maison.</div>
+        </div>
+        <span style="color:var(--t3);font-size:18px">›</span>
+      </div>
+
+      <div style="background:var(--s1);border:1px solid var(--b1);border-radius:var(--r);padding:14px;margin-top:2px">
+        <div style="font-family:var(--mono);font-size:9px;color:var(--t3);letter-spacing:1.5px;margin-bottom:10px">⬡ COMPATIBILITÉ NFC</div>
+        <div id="nfc-compat" style="font-family:var(--mono);font-size:10px;line-height:1.7"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB LIEUX -->
+  <div class="tp" id="tp-lx">
+    <div id="lx-wrap">
       <div id="lx-acts">
-        <button class="bsm ambi" onclick="openAddRoom()">+ PIÈCE</button>
-        <button class="bsm nfci" id="lx-nfc-btn" onclick="startLocScan()">⬡ SCANNER LOC.</button>
+        <button class="bxs" onclick="openAddZone()">＋ Pièce</button>
+        <button class="bxs" onclick="startLocScan()">⬡ Scanner badge lieu</button>
       </div>
-      <div id="rooms-list"></div>
-    </div>
-  </div>
-
-  <!-- TAB: CARTE -->
-  <div class="tpanel" id="tp-map">
-    <div id="map-content">
-      <div id="map-info">
-        💡 <strong style="color:var(--t2)">Plan de ta maison</strong><br>
-        Ajoute tes pièces via le bouton ci-dessous. Tu peux choisir la largeur de chaque pièce sur le plan (normale, large, ou toute la largeur).
-        Clique sur une pièce pour voir les articles stockés dedans.
-      </div>
-      <div id="map-canvas"></div>
-      <button id="map-add-rm" onclick="openAddRoom()">+ AJOUTER UNE PIÈCE</button>
+      <div id="zones-list"></div>
     </div>
   </div>
 
 </div>
 
-<!-- BOTTOM TABS -->
-<div id="tabs" style="max-width:600px;left:50%;transform:translateX(-50%)">
-  <button class="tab active" data-tp="inv" onclick="switchTab('inv')">
-    <span class="ico">📦</span>STOCK<div class="tab-ind"></div>
+<!-- BOTTOM NAV -->
+<nav id="nav">
+  <button class="nb on" data-t="stock" onclick="goTab('stock')">
+    <span class="ni">📦</span>STOCK<div class="nb-bar"></div>
   </button>
-  <button class="tab" data-tp="lx" onclick="switchTab('lx')">
-    <span class="ico">📍</span>LIEUX<div class="tab-ind"></div>
+  <button class="nb" data-t="map" onclick="goTab('map')">
+    <span class="ni">🗺️</span>CARTE<div class="nb-bar"></div>
   </button>
-  <button class="tab" data-tp="map" onclick="switchTab('map')">
-    <span class="ico">🗺️</span>CARTE<div class="tab-ind"></div>
+  <button class="nb" data-t="nfc" onclick="goTab('nfc')">
+    <span class="ni">⬡</span>NFC<div class="nb-bar"></div>
   </button>
+  <button class="nb" data-t="lx" onclick="goTab('lx')">
+    <span class="ni">📍</span>LIEUX<div class="nb-bar"></div>
+  </button>
+</nav>
+<button id="fab" onclick="openAdd()" title="Ajouter un article">+</button>
+
+<!-- ══════════ SHEETS ══════════ -->
+<!-- Item view -->
+<div class="ov" id="ov-view" onclick="cov('ov-view')">
+  <div class="sh" onclick="event.stopPropagation()" id="sh-view"></div>
 </div>
-
-<!-- FABs (inventory tab only) -->
-<button id="fab-nfc" onclick="toggleGlobalScan()" title="Scanner NFC">⬡</button>
-<button id="fab-add" onclick="openAdd()">+</button>
-
-<!-- ===== SHEETS ===== -->
-
-<!-- Item view sheet -->
-<div class="ov" id="ov-view" onclick="closeOv('ov-view')">
-  <div class="sheet" onclick="e=>e.stopPropagation()" id="sh-view"></div>
+<!-- Item form -->
+<div class="ov" id="ov-form" onclick="cov('ov-form')">
+  <div class="sh" onclick="event.stopPropagation()" id="sh-form"></div>
 </div>
-
-<!-- Item add/edit sheet -->
-<div class="ov" id="ov-form" onclick="closeOv('ov-form')">
-  <div class="sheet" onclick="event.stopPropagation()" id="sh-form"></div>
+<!-- Zone form -->
+<div class="ov" id="ov-zone" onclick="cov('ov-zone')">
+  <div class="sh" onclick="event.stopPropagation()" id="sh-zone"></div>
 </div>
-
-<!-- Add room sheet -->
-<div class="ov" id="ov-room" onclick="closeOv('ov-room')">
-  <div class="sheet" onclick="event.stopPropagation()" id="sh-room"></div>
+<!-- Loc form -->
+<div class="ov" id="ov-loc" onclick="cov('ov-loc')">
+  <div class="sh" onclick="event.stopPropagation()" id="sh-loc"></div>
 </div>
-
-<!-- Add/edit location sheet -->
-<div class="ov" id="ov-loc" onclick="closeOv('ov-loc')">
-  <div class="sheet" onclick="event.stopPropagation()" id="sh-loc"></div>
+<!-- Write menu -->
+<div class="ov" id="ov-write" onclick="cov('ov-write')">
+  <div class="sh" onclick="event.stopPropagation()" id="sh-write"></div>
 </div>
-
-<!-- Map room detail sheet -->
-<div class="ov" id="ov-rmdet" onclick="closeOv('ov-rmdet')">
-  <div class="sheet" onclick="event.stopPropagation()" id="sh-rmdet"></div>
+<!-- Room detail (from map) -->
+<div class="ov" id="ov-rmdet" onclick="cov('ov-rmdet')">
+  <div class="sh" onclick="event.stopPropagation()" id="sh-rmdet"></div>
 </div>
 
 <!-- NFC OVERLAY -->
 <div id="nfc-ov">
-  <div class="nfc-ring">⬡</div>
-  <div id="nov-title">EN ATTENTE NFC…</div>
+  <div class="nring-wrap">
+    <div class="nring">⬡</div>
+    <div class="nring-r1"></div>
+    <div class="nring-r2"></div>
+  </div>
+  <div id="nov-step">ÉTAPE 1/1</div>
+  <div id="nov-title">EN ATTENTE…</div>
   <div id="nov-sub">Approche un tag NFC du capteur</div>
-  <button class="nfc-cancel-b" onclick="cancelNfc()">ANNULER</button>
+  <div class="nfc-progress" id="nov-prog"></div>
+  <button id="nov-cancel" onclick="cancelNfc()">ANNULER</button>
 </div>
 
 <!-- CONFIRM -->
-<div id="conf-ov" onclick="closeConf()">
+<div id="conf-ov" onclick="cconf()">
   <div id="conf-box" onclick="event.stopPropagation()">
     <div class="ci">⚠️</div>
     <div class="ct">SUPPRIMER ?</div>
-    <div class="cs">Action irréversible</div>
-    <div class="brow" style="justify-content:center">
-      <button class="bsec" style="max-width:120px" onclick="closeConf()">ANNULER</button>
-      <button style="flex:1;max-width:120px;background:#EF444410;color:var(--err);border:1px solid #EF444430;font-family:var(--body);font-weight:700;font-size:14px;padding:13px;border-radius:10px;cursor:pointer" id="conf-ok">SUPPRIMER</button>
+    <div class="cs">Cette action est irréversible</div>
+    <div class="brow" style="justify-content:center;gap:10px">
+      <button class="bsec" style="max-width:130px;padding:11px" onclick="cconf()">ANNULER</button>
+      <button style="flex:1;max-width:130px;padding:11px;background:#EF444412;color:var(--err);border:1px solid #EF444430;font-family:var(--disp);font-weight:700;font-size:15px;border-radius:11px;cursor:pointer" id="conf-ok">SUPPRIMER</button>
     </div>
   </div>
 </div>
@@ -366,264 +574,497 @@ textarea{resize:vertical;min-height:68px}
 <div id="toast"><div class="ti" id="ti"></div></div>
 
 <script>
-/* ══════════════════════════════════════════════
-   DATA
-══════════════════════════════════════════════ */
-const SK='taptrack-v3';
-const PREFX_I='tt:i:',PREFX_L='tt:l:';
-const ROOM_COLORS=['#1a3a5c','#2d4a1e','#3a1e1e','#3a2d1a','#1e3838','#2e1e4a','#1e2e3a','#4a3a1e','#1a2a1a','#3a1e2e'];
-const ROOM_SPANS =[1,2,3];
-const CAT_META={
-  tool:      {label:'Outil',      icon:'⚙', c:'var(--tool)'},
-  book:      {label:'Livre',      icon:'▣', c:'var(--book)'},
-  electronic:{label:'Composant',  icon:'⬡', c:'var(--elec)'},
+/* ════════════════════════════════════════════
+   CONSTANTS & DATA
+════════════════════════════════════════════ */
+const SK = 'smartstorage-v1';
+const PI = 'ss:i:', PL = 'ss:l:'; // NFC prefixes
+
+const ZONE_COLORS = [
+  {id:'zA',hex:'#3B82F6',name:'Bleu',css:'var(--zA)'},
+  {id:'zB',hex:'#22C55E',name:'Vert',css:'var(--zB)'},
+  {id:'zC',hex:'#F97316',name:'Orange',css:'var(--zC)'},
+  {id:'zD',hex:'#A855F7',name:'Violet',css:'var(--zD)'},
+  {id:'zE',hex:'#EC4899',name:'Rose',css:'var(--zE)'},
+  {id:'zF',hex:'#14B8A6',name:'Cyan',css:'#14B8A6'},
+  {id:'zG',hex:'#EAB308',name:'Jaune',css:'#EAB308'},
+  {id:'zH',hex:'#6B7280',name:'Gris',css:'#6B7280'},
+];
+
+const CAT_META = {
+  tool:       {label:'Outil',      icon:'🛠️'},
+  book:       {label:'Livre',      icon:'📚'},
+  electronic: {label:'Composant',  icon:'⚡'},
+  cable:      {label:'Câble',      icon:'🔌'},
+  other:      {label:'Autre',      icon:'📦'},
 };
-const UNITS={tool:['pièce','unité','lot'],book:['exemplaire','tome','volume'],electronic:['pièce','pack','boîte','rouleau','m']};
+const UNITS = {
+  tool:['pièce','unité','lot'],
+  book:['exemplaire','tome','volume'],
+  electronic:['pièce','pack','boîte','rouleau','m'],
+  cable:['câble','lot','m'],
+  other:['pièce','unité','lot'],
+};
+const ROOM_EMOJIS = ['🛏️','🛋️','🍳','🔧','🖥️','📦','🚿','🏋️','🚗','🌿','🎮','🧹','👕','🍷','📖'];
+const LOC_EMOJIS  = ['🗄️','📚','📦','🚪','🔩','🧰','🧺','🗃️','🏷️','🛒','🗑️','💼'];
 
-let S={items:[],locs:[],rooms:[]};
+const SAMPLE_ZONES = [
+  {id:'z1',name:'Chambre',emoji:'🛏️',color:'zA',svgX:10,svgY:10,svgW:155,svgH:120},
+  {id:'z2',name:'Cuisine',emoji:'🍳',color:'zB',svgX:175,svgY:10,svgW:155,svgH:120},
+  {id:'z3',name:'Salon',  emoji:'🛋️',color:'zD',svgX:10,svgY:140,svgW:155,svgH:130},
+  {id:'z4',name:'Garage', emoji:'🔧',color:'zC',svgX:175,svgY:140,svgW:155,svgH:130},
+];
+const SAMPLE_LOCS = [
+  {id:'l1',name:'Bureau — Tiroir A1',zoneId:'z1',emoji:'🗄️',nfcTagId:null,svgX:20,svgY:55,svgW:55,svgH:22},
+  {id:'l2',name:'Bureau — Tiroir A2',zoneId:'z1',emoji:'🗄️',nfcTagId:null,svgX:20,svgY:79,svgW:55,svgH:22},
+  {id:'l3',name:'Bureau — Tiroir A3',zoneId:'z1',emoji:'🗄️',nfcTagId:null,svgX:20,svgY:103,svgW:55,svgH:22},
+  {id:'l4',name:'Étagère livres',     zoneId:'z1',emoji:'📚',nfcTagId:null,svgX:90,svgY:20,svgW:65,svgH:18},
+  {id:'l5',name:'Tiroir B1 cuisine',  zoneId:'z2',emoji:'🗄️',nfcTagId:null,svgX:185,svgY:55,svgW:55,svgH:22},
+  {id:'l6',name:'Placard cuisine',    zoneId:'z2',emoji:'🚪',nfcTagId:null,svgX:255,svgY:20,svgW:65,svgH:60},
+  {id:'l7',name:'Canapé — gauche',    zoneId:'z3',emoji:'🛋️',nfcTagId:null,svgX:20,svgY:175,svgW:55,svgH:22},
+  {id:'l8',name:'Meuble TV',          zoneId:'z3',emoji:'🖥️',nfcTagId:null,svgX:90,svgY:240,svgW:65,svgH:20},
+  {id:'l9',name:'Établi — Tiroir D1', zoneId:'z4',emoji:'🔩',nfcTagId:null,svgX:185,svgY:175,svgW:55,svgH:22},
+  {id:'l10',name:'Étagère garage',    zoneId:'z4',emoji:'🗄️',nfcTagId:null,svgX:255,svgY:175,svgW:65,svgH:50},
+];
+const SAMPLE_ITEMS = [
+  {id:'i1',name:'Câble chargement iPhone',category:'cable',qty:1,unit:'câble',locationId:'l1',minQty:1,note:'USB-C',nfcTagId:null},
+  {id:'i2',name:'Câble HDMI 2m',          category:'cable',qty:2,unit:'câble',locationId:'l1',minQty:1,note:'4K',  nfcTagId:null},
+  {id:'i3',name:'Perceuse Bosch GSB 18V', category:'tool', qty:1,unit:'pièce',locationId:'l9',minQty:1,note:'',    nfcTagId:null},
+  {id:'i4',name:'Tournevis Wera 6000',    category:'tool', qty:8,unit:'pièce',locationId:'l9',minQty:3,note:'',    nfcTagId:null},
+  {id:'i5',name:'Clean Code — R.Martin',  category:'book', qty:2,unit:'exemplaire',locationId:'l4',minQty:1,note:'',nfcTagId:null},
+  {id:'i6',name:'Raspberry Pi 4 (4GB)',   category:'electronic',qty:3,unit:'pièce',locationId:'l10',minQty:1,note:'',nfcTagId:null},
+  {id:'i7',name:'Résistances 10kΩ',       category:'electronic',qty:480,unit:'pièce',locationId:'l10',minQty:100,note:'0.25W',nfcTagId:null},
+  {id:'i8',name:'Niveau à bulle 60cm',    category:'tool', qty:1,unit:'pièce',locationId:'l9',minQty:1,note:'',    nfcTagId:null},
+  {id:'i9',name:'Le Petit Prince',        category:'book', qty:0,unit:'exemplaire',locationId:'l4',minQty:1,note:'En réappro',nfcTagId:null},
+];
 
-const SAMPLE_ROOMS=[
-  {id:'r1',name:'Chambre',emoji:'🛏️',color:'#1a3a5c',span:2},
-  {id:'r2',name:'Salon',emoji:'🛋️',color:'#2d4a1e',span:2},
-  {id:'r3',name:'Cuisine',emoji:'🍳',color:'#3a1e1e',span:2},
-  {id:'r4',name:'Garage',emoji:'🔧',color:'#3a2d1a',span:2},
-];
-const SAMPLE_LOCS=[
-  {id:'l1',name:'Tiroir A1',roomId:'r1',emoji:'🗄️',nfcTagId:null},
-  {id:'l2',name:'Tiroir A2',roomId:'r1',emoji:'🗄️',nfcTagId:null},
-  {id:'l3',name:'Étagère B1',roomId:'r1',emoji:'📚',nfcTagId:null},
-  {id:'l4',name:'Placard C1',roomId:'r2',emoji:'🚪',nfcTagId:null},
-  {id:'l5',name:'Tiroir B1',roomId:'r3',emoji:'🗄️',nfcTagId:null},
-  {id:'l6',name:'Étagère D1',roomId:'r4',emoji:'🔩',nfcTagId:null},
-  {id:'l7',name:'Boîte D2',roomId:'r4',emoji:'📦',nfcTagId:null},
-];
-const SAMPLE_ITEMS=[
-  {id:'i1',name:'Perceuse Bosch GSB 18V',category:'tool',qty:2,unit:'pièce',locationId:'l6',minQty:1,note:'Batteries chargées',nfcTagId:null},
-  {id:'i2',name:'Tournevis Wera 6000',category:'tool',qty:12,unit:'pièce',locationId:'l6',minQty:5,note:'',nfcTagId:null},
-  {id:'i3',name:'Clean Code — R. Martin',category:'book',qty:3,unit:'exemplaire',locationId:'l3',minQty:1,note:'Édition 2008',nfcTagId:null},
-  {id:'i4',name:'Raspberry Pi 4 (4GB)',category:'electronic',qty:5,unit:'pièce',locationId:'l7',minQty:2,note:'',nfcTagId:null},
-  {id:'i5',name:'Résistances 10kΩ',category:'electronic',qty:480,unit:'pièce',locationId:'l7',minQty:100,note:'0.25W',nfcTagId:null},
-  {id:'i6',name:'Le Petit Prince',category:'book',qty:0,unit:'exemplaire',locationId:null,minQty:1,note:'En réappro',nfcTagId:null},
-  {id:'i7',name:'Câble chargement iPhone',category:'tool',qty:1,unit:'pièce',locationId:'l1',minQty:1,note:'USB-C',nfcTagId:null},
-  {id:'i8',name:'Niveau à bulle 60cm',category:'tool',qty:1,unit:'pièce',locationId:'l6',minQty:1,note:'',nfcTagId:null},
-];
+let D = {items:[], locs:[], zones:[]};
+let filterCat = 'all', searchStr = '', blinkLocId = null;
 
-function loadS(){
-  try{const r=localStorage.getItem(SK);if(r){S=JSON.parse(r)}else{S={items:JSON.parse(JSON.stringify(SAMPLE_ITEMS)),locs:JSON.parse(JSON.stringify(SAMPLE_LOCS)),rooms:JSON.parse(JSON.stringify(SAMPLE_ROOMS))}}}
-  catch{S={items:JSON.parse(JSON.stringify(SAMPLE_ITEMS)),locs:JSON.parse(JSON.stringify(SAMPLE_LOCS)),rooms:JSON.parse(JSON.stringify(SAMPLE_ROOMS))}}
+function loadD(){
+  try{
+    const r = localStorage.getItem(SK);
+    if(r) D = JSON.parse(r);
+    else D = {
+      items: JSON.parse(JSON.stringify(SAMPLE_ITEMS)),
+      locs:  JSON.parse(JSON.stringify(SAMPLE_LOCS)),
+      zones: JSON.parse(JSON.stringify(SAMPLE_ZONES)),
+    };
+  }catch{
+    D = {
+      items: JSON.parse(JSON.stringify(SAMPLE_ITEMS)),
+      locs:  JSON.parse(JSON.stringify(SAMPLE_LOCS)),
+      zones: JSON.parse(JSON.stringify(SAMPLE_ZONES)),
+    };
+  }
 }
-function saveS(){localStorage.setItem(SK,JSON.stringify(S))}
+function saveD(){ localStorage.setItem(SK, JSON.stringify(D)); }
 
-/* ══════════════════════════════════════════════
+/* ════════════════════════════════════════════
    HELPERS
-══════════════════════════════════════════════ */
-function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
-function uid(){return 'x'+Date.now().toString(36)+Math.random().toString(36).slice(2,6)}
-function getLoc(id){return S.locs.find(l=>l.id===id)||null}
-function getRoom(id){return S.rooms.find(r=>r.id===id)||null}
-function getItem(id){return S.items.find(i=>i.id===id)||null}
-function locLabel(item){
-  const loc=getLoc(item.locationId);if(!loc)return null;
-  const rm=getRoom(loc.roomId);
-  return {name:loc.name,room:rm?rm.name:'',color:rm?rm.color:'var(--s2)',emoji:loc.emoji||'📍'};
-}
-function qClass(item){return item.qty===0?'qout':item.qty<=item.minQty?'qlow':'qok'}
-function qColor(item){const c=qClass(item);return c==='qout'?'var(--err)':c==='qlow'?'var(--warn)':'var(--amber)'}
+════════════════════════════════════════════ */
+const esc = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+const uid = () => 'x'+Date.now().toString(36)+Math.random().toString(36).slice(2,5);
+const gI  = id => D.items.find(i=>i.id===id)||null;
+const gL  = id => D.locs.find(l=>l.id===id)||null;
+const gZ  = id => D.zones.find(z=>z.id===id)||null;
+const zC  = (zid) => { const c = ZONE_COLORS.find(c=>c.id===zid); return c?c.hex:'#6B7280'; }
+const zCS = (zid) => { const c = ZONE_COLORS.find(c=>c.id===zid); return c?c.css:'#6B7280'; }
+const zCL = (zid) => { const c = ZONE_COLORS.find(c=>c.id===zid); return c?c.name:'?'; }
 
-/* ══════════════════════════════════════════════
-   TAB SWITCHING
-══════════════════════════════════════════════ */
-let activeTab='inv';
-function switchTab(id){
-  activeTab=id;
-  document.querySelectorAll('.tpanel').forEach(p=>p.classList.remove('active'));
-  document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b.dataset.tp===id));
-  document.getElementById('tp-'+id).classList.add('active');
-  // show/hide FABs
-  const showFab=id==='inv';
-  document.getElementById('fab-add').style.display=showFab?'flex':'none';
-  document.getElementById('fab-nfc').style.display=showFab?'flex':'none';
-  if(id==='lx')renderRooms();
-  if(id==='map')renderMap();
+function locInfo(item){
+  if(!item.locationId) return null;
+  const loc = gL(item.locationId); if(!loc) return null;
+  const zone = gZ(loc.zoneId);
+  return {loc, zone, hex: zone?zC(zone.color):'#6B7280', css: zone?zCS(zone.color):'#6B7280', zoneId: zone?zone.id:null};
+}
+function qClass(item){ return item.qty===0?'qout':item.qty<=item.minQty?'qlow':'qok'; }
+function qColor(item){ const c=qClass(item); return c==='qout'?'var(--err)':c==='qlow'?'var(--warn)':'var(--t1)'; }
+
+/* ════════════════════════════════════════════
+   TAB NAVIGATION
+════════════════════════════════════════════ */
+let activeTab = 'stock';
+function goTab(id){
+  activeTab = id;
+  document.querySelectorAll('.tp').forEach(p => p.classList.toggle('on', p.id==='tp-'+id));
+  document.querySelectorAll('.nb').forEach(b => b.classList.toggle('on', b.dataset.t===id));
+  document.getElementById('fab').style.display = id==='stock' ? 'flex' : 'none';
+  if(id==='map') renderMap();
+  if(id==='lx')  renderZones();
+  if(id==='nfc') renderNfcCompat();
 }
 
-/* ══════════════════════════════════════════════
-   INVENTORY RENDER
-══════════════════════════════════════════════ */
-let filterCat='all',searchStr='';
+/* ════════════════════════════════════════════
+   RENDER ALL
+════════════════════════════════════════════ */
 function renderAll(){
   // stats
-  document.getElementById('st-tot').textContent=S.items.length;
-  document.getElementById('st-low').textContent=S.items.filter(i=>i.qty>0&&i.qty<=i.minQty).length;
-  document.getElementById('st-out').textContent=S.items.filter(i=>i.qty===0).length;
+  document.getElementById('st-tot').textContent = D.items.length;
+  document.getElementById('st-low').textContent = D.items.filter(i=>i.qty>0&&i.qty<=i.minQty).length;
+  document.getElementById('st-out').textContent = D.items.filter(i=>i.qty===0).length;
   // counts
-  document.getElementById('c-all').textContent=S.items.length;
-  ['tool','book','electronic'].forEach(c=>document.getElementById('c-'+c.slice(0,4)).textContent=S.items.filter(i=>i.category===c).length);
-  document.getElementById('c-elec').textContent=S.items.filter(i=>i.category==='electronic').length;
+  document.getElementById('c-all').textContent   = D.items.length;
+  document.getElementById('c-tool').textContent  = D.items.filter(i=>i.category==='tool').length;
+  document.getElementById('c-book').textContent  = D.items.filter(i=>i.category==='book').length;
+  document.getElementById('c-elec').textContent  = D.items.filter(i=>i.category==='electronic').length;
+  document.getElementById('c-cable').textContent = D.items.filter(i=>i.category==='cable').length;
   renderGrid();
-  if(activeTab==='lx')renderRooms();
-  if(activeTab==='map')renderMap();
+  if(activeTab==='map') renderMap();
+  if(activeTab==='lx')  renderZones();
 }
+
+/* ════════════════════════════════════════════
+   INVENTORY GRID
+════════════════════════════════════════════ */
 function renderGrid(){
-  const grid=document.getElementById('igrid');
-  const q=searchStr.toLowerCase();
-  let list=S.items
-    .filter(i=>filterCat==='all'||i.category===filterCat)
-    .filter(i=>!q||i.name.toLowerCase().includes(q)||(getLoc(i.locationId)?.name||'').toLowerCase().includes(q)||i.note.toLowerCase().includes(q))
+  const grid = document.getElementById('igrid');
+  const q = searchStr.toLowerCase();
+  let list = D.items
+    .filter(i => filterCat==='all' || i.category===filterCat)
+    .filter(i => {
+      if(!q) return true;
+      const li = locInfo(i);
+      return i.name.toLowerCase().includes(q)
+          || i.note.toLowerCase().includes(q)
+          || (li && li.loc.name.toLowerCase().includes(q))
+          || (li && li.zone && li.zone.name.toLowerCase().includes(q));
+    })
     .sort((a,b)=>a.name.localeCompare(b.name));
-  grid.innerHTML='';
-  if(!list.length){grid.innerHTML='<div class="empty-st" style="grid-column:1/-1"><div class="ei">◈</div><div class="et">AUCUN ARTICLE TROUVÉ</div></div>';return}
+  grid.innerHTML = '';
+  if(!list.length){
+    grid.innerHTML='<div class="emp"><div class="ei">📦</div><div class="et">AUCUN ARTICLE TROUVÉ</div></div>';
+    return;
+  }
   list.forEach((item,idx)=>{
-    const meta=CAT_META[item.category];
-    const isOut=item.qty===0,isLow=!isOut&&item.qty<=item.minQty;
-    const ll=locLabel(item);
-    const div=document.createElement('div');
-    div.className='icard '+item.category;
-    div.style.animationDelay=(idx*30)+'ms';
-    div.dataset.id=item.id;
-    div.innerHTML=`
-      <div class="itop">
-        <span class="cba ${item.category}">${meta.icon} ${meta.label}</span>
-        <div class="sbadges">
-          ${item.nfcTagId?'<span class="sb nfc">NFC</span>':''}
-          ${isOut?'<span class="sb out">ÉPUISÉ</span>':isLow?'<span class="sb low">BAS</span>':''}
+    const meta = CAT_META[item.category]||CAT_META.other;
+    const li   = locInfo(item);
+    const isOut = item.qty===0, isLow = !isOut&&item.qty<=item.minQty;
+    const zClass = li?.zone ? li.zone.color : 'znone';
+    const hex    = li ? li.hex : '#3D4A6B';
+    const div = document.createElement('div');
+    div.className = 'ic '+zClass;
+    div.style.animationDelay = (idx*25)+'ms';
+    div.dataset.id = item.id;
+    div.innerHTML = `
+      <div class="ic-top">
+        <div class="ic-icon" style="background:${hex}18;border:1px solid ${hex}30">${meta.icon}</div>
+        <div class="ic-badges">
+          ${item.nfcTagId?'<span class="ib nfc">⬡ NFC</span>':''}
+          ${isOut?'<span class="ib out">ÉPUISÉ</span>':isLow?'<span class="ib low">BAS</span>':''}
         </div>
       </div>
-      <div class="iname">${esc(item.name)}</div>
-      ${ll?`<div class="iloc" style="background:${ll.color}22;color:rgba(255,255,255,.6);border:1px solid ${ll.color}33">${ll.emoji} ${esc(ll.name)} · ${esc(ll.room)}</div>`:'<div style="height:8px"></div>'}
-      <div class="iqrow">
-        <button class="qbtn" onclick="adj('${item.id}',-1,event)">−</button>
-        <span class="qnum ${qClass(item)}">${item.qty}</span>
-        <button class="qbtn" onclick="adj('${item.id}',+1,event)">+</button>
-        <span class="qunit">${esc(item.unit)}</span>
+      <div class="ic-name">${esc(item.name)}</div>
+      ${li
+        ? `<div class="ic-loc" style="background:${li.hex}15;color:${li.hex};border:1px solid ${li.hex}25">
+             ${li.zone?.emoji||'📍'} ${esc(li.zone?.name||'')} · ${esc(li.loc.name)}
+           </div>`
+        : `<div class="ic-loc" style="background:var(--s2);color:var(--t3);border:1px dashed var(--b1)">📍 Sans emplacement</div>`}
+      <div class="ic-qrow">
+        <button class="qb" onclick="adj('${item.id}',-1,event)">−</button>
+        <span class="qn ${qClass(item)}">${item.qty}</span>
+        <button class="qb" onclick="adj('${item.id}',+1,event)">+</button>
+        <span class="qu">${esc(item.unit)}</span>
       </div>`;
-    div.addEventListener('click',()=>openView(item.id));
+    div.addEventListener('click', ()=>openView(item.id));
     grid.appendChild(div);
   });
 }
-function setFilterCat(cat){
-  filterCat=cat;
-  document.querySelectorAll('.ctab').forEach(b=>{
-    b.className='ctab'+(b.dataset.cat===cat?' '+{'all':'ca','tool':'ct','book':'cb','electronic':'ce'}[cat]:'');
-  });
+
+function setFCat(cat){
+  filterCat = cat;
+  document.querySelectorAll('.ct').forEach(b => b.classList.toggle('on', b.dataset.cat===cat));
   renderGrid();
 }
-function onSearch(v){searchStr=v;document.getElementById('sc2').style.display=v?'block':'none';renderGrid()}
-function clearSearch(){searchStr='';document.getElementById('si2').value='';document.getElementById('sc2').style.display='none';renderGrid()}
+function onSearch(v){ searchStr=v; document.getElementById('srch-x').style.display=v?'block':'none'; renderGrid(); }
+function clearSearch(){ searchStr=''; document.getElementById('srch').value=''; document.getElementById('srch-x').style.display='none'; renderGrid(); }
+document.querySelectorAll('.ct').forEach(b => b.addEventListener('click',()=>setFCat(b.dataset.cat)));
+
 function adj(id,d,e){
-  if(e)e.stopPropagation();
-  const item=getItem(id);if(!item)return;
-  item.qty=Math.max(0,item.qty+d);
-  saveS();renderAll();
-  if(document.getElementById('ov-view').classList.contains('show'))refreshView(id);
+  if(e) e.stopPropagation();
+  const item = gI(id); if(!item) return;
+  item.qty = Math.max(0, item.qty+d);
+  saveD(); renderAll();
+  if(document.getElementById('ov-view').classList.contains('on')) refreshView(id);
 }
 
-/* ══════════════════════════════════════════════
+/* ════════════════════════════════════════════
    ITEM VIEW SHEET
-══════════════════════════════════════════════ */
+════════════════════════════════════════════ */
 function openView(id){
-  const item=getItem(id);if(!item)return;
   refreshView(id);
-  document.getElementById('ov-view').classList.add('show');
+  sov('ov-view');
 }
 function refreshView(id){
-  const item=getItem(id);if(!item)return;
-  const meta=CAT_META[item.category];
-  const isOut=item.qty===0,isLow=!isOut&&item.qty<=item.minQty;
-  const ll=locLabel(item);
-  const sh=document.getElementById('sh-view');
-  sh.innerHTML=`
-    <div class="shdrag"></div>
-    <div class="vcat-bar" style="background:${meta.c}"></div>
-    <div class="vname">${esc(item.name)}</div>
-    ${ll?`<div class="vloc-badge" style="background:${ll.color}22;border:1px solid ${ll.color}33;color:rgba(255,255,255,.7)">${ll.emoji} ${esc(ll.name)} · ${esc(ll.room)}</div>`:'<div style="margin-bottom:14px;font-family:var(--mono);font-size:10px;color:var(--t3)">Aucun emplacement défini</div>'}
-    <div class="vi-grid">
-      <div class="vi-row"><span class="vi-l">CATÉGORIE</span><span class="vi-v">${meta.label}</span></div>
-      <div class="vi-row"><span class="vi-l">UNITÉ</span><span class="vi-v">${esc(item.unit)}</span></div>
-      <div class="vi-row"><span class="vi-l">SEUIL MIN.</span><span class="vi-v">${item.minQty}</span></div>
-      ${item.note?`<div class="vi-row"><span class="vi-l">NOTE</span><span class="vi-v">${esc(item.note)}</span></div>`:''}
-    </div>
-    <div class="bqrow">
-      <button class="bqbtn" onclick="adj('${id}',-1)">−</button>
-      <div class="bqctr">
-        <div class="bqnum" style="color:${qColor(item)}">${item.qty}</div>
-        <div class="bqunit">${esc(item.unit).toUpperCase()}</div>
+  const item = gI(id); if(!item) return;
+  const meta = CAT_META[item.category]||CAT_META.other;
+  const li   = locInfo(item);
+  const isOut = item.qty===0, isLow = !isOut&&item.qty<=item.minQty;
+  const hex = li ? li.hex : '#3D4A6B';
+  document.getElementById('sh-view').innerHTML = `
+    <div class="drag"></div>
+    <div class="v-zone-bar" style="background:linear-gradient(90deg,${hex},${hex}44)"></div>
+    <div class="v-header">
+      <div class="v-icon" style="background:${hex}18;border:1px solid ${hex}30;font-size:28px">${meta.icon}</div>
+      <div class="v-meta">
+        <div class="v-name">${esc(item.name)}</div>
+        <div class="v-cat">${meta.label} · ${esc(item.unit)}</div>
       </div>
-      <button class="bqbtn" onclick="adj('${id}',+1)">+</button>
+    </div>
+    ${li
+      ? `<div class="v-loc-big" style="background:${li.hex}18;border:1px solid ${li.hex}30">
+           <div class="v-loc-em">${li.zone?.emoji||'📍'}</div>
+           <div class="v-loc-txt">
+             <div class="rm" style="color:${li.hex}">${esc(li.zone?.name||'?')}</div>
+             <div class="loc">${esc(li.loc.name)} ${li.loc.nfcTagId?'· ⬡ NFC':''}</div>
+           </div>
+         </div>`
+      : `<div class="v-loc-none">📍 Aucun emplacement défini</div>`}
+    <div class="bq-row">
+      <button class="bqb" onclick="adj('${id}',-1)">−</button>
+      <div class="bq-ctr">
+        <div class="bq-num" style="color:${qColor(item)}">${item.qty}</div>
+        <div class="bq-u">${esc(item.unit).toUpperCase()}</div>
+      </div>
+      <button class="bqb" onclick="adj('${id}',+1)">+</button>
     </div>
     ${isOut?`<div class="alert-b out">⚠ STOCK ÉPUISÉ — réapprovisionnement requis</div>`:isLow?`<div class="alert-b low">⚠ STOCK BAS — en dessous du seuil minimum</div>`:''}
-    <div class="nfc-sec">
-      <div class="nfc-st">📍 EMPLACEMENT NFC</div>
-      ${ll?`<div class="cur-loc-show" style="background:${ll.color}22;border:1px solid ${ll.color}33">${ll.emoji} <strong>${esc(ll.name)}</strong> · ${esc(ll.room)}</div>`:''}
-      <button class="loc-scan-btn" onclick="startItemLocScan('${id}')">⬡ SCANNER UN BADGE D'EMPLACEMENT</button>
+    <div class="info-grid">
+      <div class="ir"><span class="k">CATÉGORIE</span><span class="v">${meta.label}</span></div>
+      <div class="ir"><span class="k">SEUIL MINIMUM</span><span class="v">${item.minQty} ${esc(item.unit)}</span></div>
+      ${item.note?`<div class="ir"><span class="k">NOTE</span><span class="v">${esc(item.note)}</span></div>`:''}
     </div>
-    <div class="nfc-sec">
-      <div class="nfc-st">⬡ TAG NFC DE L'ARTICLE</div>
-      <div class="nfc-tagid">ID: ${item.id}${item.nfcTagId?' · Tag: '+item.nfcTagId.slice(0,16)+'…':' · Aucun tag écrit'}</div>
-      <button class="nfc-btnw" onclick="writeItemTag('${id}')">${item.nfcTagId?'↺ RÉÉCRIRE LE TAG':'⬡ ÉCRIRE SUR TAG NFC'}</button>
+    ${li?`<button class="map-btn" onclick="showOnMap('${id}')">🗺️ LOCALISER SUR LA CARTE</button>`:''}
+    <div class="nfcs">
+      <div class="nfcs-t">📍 EMPLACEMENT NFC</div>
+      <div class="nfcs-id">Article ID: ${item.id}${item.nfcTagId?' · Tag physique associé':' · Aucun tag'}</div>
+      <button class="nfc-btn-a" onclick="startRangerItem('${id}')">⬡ SCANNER BADGE D'EMPLACEMENT</button>
+      <button class="nfc-btn-a" onclick="writeItemTag('${id}')">${item.nfcTagId?'↺ RÉÉCRIRE LE TAG':'⬡ ÉCRIRE TAG SUR L\'OBJET'}</button>
     </div>
     <div class="brow">
-      <button class="bsec" onclick="openDeleteConfirm('${id}')">🗑 Supprimer</button>
-      <button class="bmain" onclick="openEdit('${id}')">✎ Modifier</button>
+      <button class="bsec" onclick="openConf(()=>deleteItem('${id}'))">🗑</button>
+      <button class="bmain" onclick="openEdit('${id}')">✎ MODIFIER</button>
     </div>`;
 }
 
-/* ══════════════════════════════════════════════
-   ITEM FORM (ADD / EDIT)
-══════════════════════════════════════════════ */
+function showOnMap(id){
+  blinkLocId = gI(id)?.locationId || null;
+  cov('ov-view');
+  goTab('map');
+  renderMap();
+  toast('🗺️ Emplacement mis en surbrillance sur la carte !','nfc');
+}
+
+/* ════════════════════════════════════════════
+   SVG MAP
+════════════════════════════════════════════ */
+function renderMap(){
+  const svg = document.getElementById('plan');
+  svg.innerHTML = '';
+  // border
+  const border = makeSVG('rect',{x:2,y:2,width:336,height:276,fill:'none',stroke:'var(--b2)',
+    'stroke-width':'1','rx':'4'});
+  svg.appendChild(border);
+
+  // Legend
+  const leg = document.getElementById('map-legend');
+  leg.innerHTML = '';
+  D.zones.forEach(z=>{
+    const cnt = D.items.filter(i=>D.locs.some(l=>l.id===i.locationId&&l.zoneId===z.id)).length;
+    const el = document.createElement('div');
+    el.className = 'ml';
+    el.innerHTML = `<div class="ml-dot" style="background:${zC(z.color)}"></div>${z.emoji} ${esc(z.name)} <span class="ml-cnt">${cnt} art.</span>`;
+    el.addEventListener('click',()=>openRoomDetail(z.id));
+    leg.appendChild(el);
+  });
+
+  // Draw zones + locs
+  D.zones.forEach(z=>{
+    const col = zC(z.color);
+    // zone rect
+    const zr = makeSVG('rect',{
+      x:z.svgX,y:z.svgY,width:z.svgW,height:z.svgH,
+      fill:col,class:'rm-rect',rx:6,stroke:col,'stroke-width':1.5,'stroke-opacity':.4
+    });
+    zr.addEventListener('click',()=>openRoomDetail(z.id));
+    svg.appendChild(zr);
+    // zone label
+    const zt = makeSVG('text',{x:z.svgX+8,y:z.svgY+13,fill:col,class:'rm-label'});
+    zt.textContent = z.emoji+' '+z.name;
+    svg.appendChild(zt);
+    // locs
+    const locs = D.locs.filter(l=>l.zoneId===z.id);
+    locs.forEach(loc=>{
+      if(!loc.svgX) return;
+      const isTarget = blinkLocId === loc.id;
+      const lr = makeSVG('rect',{
+        x:loc.svgX,y:loc.svgY,width:loc.svgW,height:loc.svgH,
+        fill:isTarget?'#EF4444':col,rx:3,stroke:isTarget?'#EF4444':col,
+        'stroke-width':1,'stroke-opacity':.6,
+        class:'loc-rect'+(isTarget?' loc-found':''),
+      });
+      lr.style.color = isTarget?'#EF4444':col;
+      lr.addEventListener('click',(e)=>{e.stopPropagation();openLocDetail(loc.id);});
+      svg.appendChild(lr);
+      const cnt = D.items.filter(i=>i.locationId===loc.id).length;
+      const lt = makeSVG('text',{
+        x:loc.svgX+loc.svgW/2,y:loc.svgY+loc.svgH/2+3,
+        fill:isTarget?'#fff':'#fff',class:'loc-label'
+      });
+      lt.textContent = loc.name.split(' — ')[1]||loc.name.split(' ')[0];
+      svg.appendChild(lt);
+      if(cnt>0){
+        const lc = makeSVG('text',{
+          x:loc.svgX+loc.svgW-3,y:loc.svgY+8,
+          fill:isTarget?'#fff':col,class:'loc-label','text-anchor':'end',
+          style:'font-size:8px;font-weight:700'
+        });
+        lc.textContent = cnt;
+        svg.appendChild(lc);
+      }
+    });
+  });
+}
+
+function makeSVG(tag, attrs){
+  const el = document.createElementNS('http://www.w3.org/2000/svg', tag);
+  Object.entries(attrs).forEach(([k,v])=>el.setAttribute(k,v));
+  return el;
+}
+
+function openLocDetail(lid){
+  const loc = gL(lid); if(!loc) return;
+  const zone = gZ(loc.zoneId);
+  const items = D.items.filter(i=>i.locationId===lid);
+  const hex = zone ? zC(zone.color) : '#6B7280';
+  const sh = document.getElementById('sh-rmdet');
+  sh.innerHTML = `
+    <div class="drag"></div>
+    <div class="shhdr">
+      <span style="font-size:20px">${loc.emoji||'📍'}</span>
+      <span class="sht">${esc(loc.name)}</span>
+      <button class="shx" onclick="cov('ov-rmdet')">✕</button>
+    </div>
+    ${zone?`<div style="display:inline-flex;align-items:center;gap:6px;background:${hex}18;border:1px solid ${hex}30;border-radius:8px;padding:6px 12px;font-family:var(--mono);font-size:9px;color:${hex};margin-bottom:14px">${zone.emoji} ${esc(zone.name)}</div>`:''}
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+      <div style="font-family:var(--mono);font-size:8px;color:var(--t3);letter-spacing:1.5px">${items.length} ARTICLE(S)</div>
+      <div class="lrow-nfc ${loc.nfcTagId?'y':'n'}">${loc.nfcTagId?'⬡ Tag NFC associé':'⬡ Sans tag NFC'}</div>
+    </div>
+    ${items.length
+      ? items.map(item=>{const m=CAT_META[item.category]||CAT_META.other;return`
+        <div style="display:flex;align-items:center;gap:10px;padding:10px;background:var(--s2);border-radius:10px;margin-bottom:7px;cursor:pointer"
+             onclick="openView('${item.id}');cov('ov-rmdet')">
+          <span style="font-size:20px">${m.icon}</span>
+          <div style="flex:1"><div style="font-weight:600;font-size:13px">${esc(item.name)}</div>
+          <div style="font-family:var(--mono);font-size:9px;color:var(--t3)">${item.qty} ${esc(item.unit)}</div></div>
+          <span style="color:${qColor(item)};font-family:var(--disp);font-size:20px;font-weight:800">${item.qty}</span>
+        </div>`}).join('')
+      : `<div style="text-align:center;padding:30px 0;font-family:var(--mono);font-size:9px;color:var(--t3)">AUCUN ARTICLE ICI</div>`}
+    <div class="brow" style="margin-top:10px">
+      <button class="bsec" onclick="openEditLoc('${lid}');cov('ov-rmdet')">✎ Modifier</button>
+      <button class="nfc-btn-a" style="flex:1" onclick="writeLocTag('${lid}');cov('ov-rmdet')">⬡ Écrire tag NFC</button>
+    </div>`;
+  sov('ov-rmdet');
+}
+
+function openRoomDetail(zid){
+  const zone = gZ(zid); if(!zone) return;
+  const hex = zC(zone.color);
+  const locs = D.locs.filter(l=>l.zoneId===zid);
+  const allItems = D.items.filter(i=>locs.some(l=>l.id===i.locationId));
+  const sh = document.getElementById('sh-rmdet');
+  sh.innerHTML = `
+    <div class="drag"></div>
+    <div style="height:4px;border-radius:2px;background:${hex};margin-bottom:14px"></div>
+    <div class="shhdr">
+      <span style="font-size:22px">${zone.emoji}</span>
+      <span class="sht" style="color:${hex}">${esc(zone.name)}</span>
+      <button class="shx" onclick="cov('ov-rmdet')">✕</button>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px">
+      ${locs.map(l=>{const cnt=D.items.filter(i=>i.locationId===l.id).length;
+        return`<div style="background:${hex}15;border:1px solid ${hex}30;border-radius:8px;padding:7px 11px;font-family:var(--mono);font-size:9px;color:${hex};cursor:pointer"
+          onclick="openLocDetail('${l.id}');cov('ov-rmdet')">${l.emoji} ${esc(l.name)} · ${cnt}</div>`;
+      }).join('')}
+      ${!locs.length?'<div style="font-family:var(--mono);font-size:9px;color:var(--t3)">Aucun emplacement configuré</div>':''}
+    </div>
+    ${allItems.length
+      ? `<div style="font-family:var(--mono);font-size:8px;color:var(--t3);letter-spacing:1.5px;margin-bottom:10px">ARTICLES DANS CETTE PIÈCE</div>
+         ${allItems.map(item=>{const m=CAT_META[item.category]||CAT_META.other;const loc=gL(item.locationId);return`
+           <div style="display:flex;align-items:center;gap:10px;padding:10px;background:var(--s2);border-radius:10px;margin-bottom:7px;cursor:pointer"
+                onclick="openView('${item.id}');cov('ov-rmdet')">
+             <span style="font-size:18px">${m.icon}</span>
+             <div style="flex:1"><div style="font-weight:600;font-size:13px">${esc(item.name)}</div>
+             ${loc?`<div style="font-family:var(--mono);font-size:9px;color:${hex}">${loc.emoji} ${esc(loc.name)}</div>`:''}
+             </div>
+             <span style="color:${qColor(item)};font-family:var(--disp);font-size:22px;font-weight:800">${item.qty}</span>
+           </div>`}).join('')}`
+      : `<div style="text-align:center;padding:24px;font-family:var(--mono);font-size:9px;color:var(--t3)">AUCUN ARTICLE</div>`}
+    <div class="brow" style="margin-top:12px">
+      <button class="bsec" onclick="openEditZone('${zid}');cov('ov-rmdet')">✎ Modifier la pièce</button>
+      <button class="bmain" onclick="openAddLoc('${zid}');cov('ov-rmdet')">+ Emplacement</button>
+    </div>`;
+  sov('ov-rmdet');
+}
+
+/* ════════════════════════════════════════════
+   ITEM FORM
+════════════════════════════════════════════ */
 function openAdd(){
-  renderForm({id:uid(),name:'',category:'tool',qty:1,unit:'pièce',locationId:null,minQty:1,note:'',nfcTagId:null},'add');
-  openOv('ov-form');
+  renderItemForm({id:uid(),name:'',category:'tool',qty:1,unit:'pièce',locationId:null,minQty:1,note:'',nfcTagId:null},'add');
+  sov('ov-form');
 }
 function openEdit(id){
-  const item=getItem(id);if(!item)return;
-  renderForm({...item},'edit');
-  openOv('ov-form');
-  closeOv('ov-view');
+  const item = gI(id); if(!item) return;
+  renderItemForm({...item},'edit');
+  sov('ov-form');
+  cov('ov-view');
 }
-function renderForm(d,mode){
-  const locOpts=S.locs.map(l=>{const rm=getRoom(l.roomId);return`<option value="${l.id}" ${l.id===d.locationId?'selected':''}>${l.emoji||'📍'} ${esc(l.name)}${rm?' ('+esc(rm.name)+')':''}</option>`}).join('');
+function renderItemForm(d,mode){
+  const locOpts = D.locs.map(l=>{const z=gZ(l.zoneId);return`<option value="${l.id}" ${l.id===d.locationId?'selected':''}>${l.emoji||'📍'} ${esc(l.name)}${z?' ('+esc(z.name)+')':''}</option>`;}).join('');
   document.getElementById('sh-form').innerHTML=`
-    <div class="shdrag"></div>
+    <div class="drag"></div>
     <div class="shhdr">
-      <span style="font-size:20px;color:var(--amber)">◈</span>
-      <span class="shtitle">${mode==='add'?'NOUVEL ARTICLE':'MODIFIER'}</span>
-      <button class="shclose" onclick="closeOv('ov-form')">✕</button>
+      <span style="font-size:20px">${mode==='add'?'✨':'✏️'}</span>
+      <span class="sht">${mode==='add'?'NOUVEL ARTICLE':'MODIFIER'}</span>
+      <button class="shx" onclick="cov('ov-form')">✕</button>
     </div>
     <div class="ff">
-      <div><div class="fl">NOM *</div><input id="fn" value="${esc(d.name)}" placeholder="ex: Câble chargement iPhone"></div>
+      <div><label class="fl">NOM *</label>
+        <input id="fn" value="${esc(d.name)}" placeholder="ex: Câble iPhone, Tournevis…"></div>
       <div class="fg2">
-        <div><div class="fl">CATÉGORIE</div>
+        <div><label class="fl">CATÉGORIE</label>
           <select id="fcat" onchange="onFCat()">
-            <option value="tool" ${d.category==='tool'?'selected':''}>⚙ Outil</option>
-            <option value="book" ${d.category==='book'?'selected':''}>▣ Livre</option>
-            <option value="electronic" ${d.category==='electronic'?'selected':''}>⬡ Composant</option>
+            ${Object.entries(CAT_META).map(([k,v])=>`<option value="${k}" ${k===d.category?'selected':''}>${v.icon} ${v.label}</option>`).join('')}
           </select></div>
-        <div><div class="fl">UNITÉ</div><select id="funit">${(UNITS[d.category]||UNITS.tool).map(u=>`<option ${u===d.unit?'selected':''}>${u}</option>`).join('')}</select></div>
+        <div><label class="fl">UNITÉ</label>
+          <select id="funit">${(UNITS[d.category]||UNITS.other).map(u=>`<option ${u===d.unit?'selected':''}>${u}</option>`).join('')}</select></div>
       </div>
       <div class="fg2">
-        <div><div class="fl">QUANTITÉ</div><input id="fqty" type="number" min="0" value="${d.qty}"></div>
-        <div><div class="fl">SEUIL MIN.</div><input id="fmin" type="number" min="0" value="${d.minQty}"></div>
+        <div><label class="fl">QUANTITÉ</label><input id="fqty" type="number" min="0" value="${d.qty}"></div>
+        <div><label class="fl">SEUIL MIN.</label><input id="fmin" type="number" min="0" value="${d.minQty}"></div>
       </div>
-      <div><div class="fl">EMPLACEMENT</div>
-        <select id="floc"><option value="">— Aucun emplacement —</option>${locOpts}</select></div>
-      <div><div class="fl">NOTE</div><textarea id="fnote">${esc(d.note)}</textarea></div>
+      <div><label class="fl">EMPLACEMENT</label>
+        <select id="floc"><option value="">— Sans emplacement —</option>${locOpts}</select></div>
+      <div><label class="fl">NOTE</label><textarea id="fnote">${esc(d.note)}</textarea></div>
       <div class="brow">
-        <button class="bsec" onclick="closeOv('ov-form')">ANNULER</button>
-        <button class="bmain" id="fsave" onclick="saveForm('${d.id}','${mode}')">${mode==='add'?'✓ AJOUTER':'✓ ENREGISTRER'}</button>
+        <button class="bsec" onclick="cov('ov-form')">ANNULER</button>
+        <button class="bmain" id="fsave" onclick="saveItemForm('${d.id}','${mode}')">${mode==='add'?'✓ AJOUTER':'✓ ENREGISTRER'}</button>
       </div>
-      ${mode==='edit'?`<button class="bdel" onclick="openDeleteConfirm('${d.id}')">🗑 Supprimer cet article</button>`:''}
+      ${mode==='edit'?`<button class="bdel" onclick="openConf(()=>deleteItem('${d.id}'))">🗑 Supprimer cet article</button>`:''}
     </div>`;
-  document.getElementById('fn').addEventListener('input',()=>{document.getElementById('fsave').disabled=!document.getElementById('fn').value.trim()});
-  document.getElementById('fsave').disabled=!d.name.trim();
+  const fn = document.getElementById('fn');
+  fn.addEventListener('input',()=>{document.getElementById('fsave').disabled=!fn.value.trim();});
+  document.getElementById('fsave').disabled = !d.name.trim();
 }
 function onFCat(){
-  const cat=document.getElementById('fcat').value;
-  document.getElementById('funit').innerHTML=(UNITS[cat]||UNITS.tool).map(u=>`<option>${u}</option>`).join('');
+  const cat = document.getElementById('fcat').value;
+  document.getElementById('funit').innerHTML = (UNITS[cat]||UNITS.other).map(u=>`<option>${u}</option>`).join('');
 }
-function saveForm(id,mode){
-  const name=document.getElementById('fn').value.trim();if(!name)return;
-  const item={
+function saveItemForm(id,mode){
+  const name = document.getElementById('fn').value.trim(); if(!name) return;
+  const existing = gI(id);
+  const item = {
     id,name,
     category:document.getElementById('fcat').value,
     qty:Number(document.getElementById('fqty').value)||0,
@@ -631,309 +1072,296 @@ function saveForm(id,mode){
     locationId:document.getElementById('floc').value||null,
     minQty:Number(document.getElementById('fmin').value)||0,
     note:document.getElementById('fnote').value.trim(),
-    nfcTagId:mode==='edit'?(getItem(id)||{}).nfcTagId||null:null,
+    nfcTagId:mode==='edit'?(existing?.nfcTagId||null):null,
   };
-  if(mode==='add'){S.items.unshift(item);toast('« '+name+' » ajouté','ok')}
-  else{const idx=S.items.findIndex(i=>i.id===id);if(idx>=0)S.items[idx]=item;toast('« '+name+' » mis à jour','ok')}
-  saveS();renderAll();closeOv('ov-form');
+  if(mode==='add'){D.items.unshift(item);toast('✓ «'+name+'» ajouté','ok');}
+  else{const idx=D.items.findIndex(i=>i.id===id);if(idx>=0)D.items[idx]=item;toast('✓ «'+name+'» mis à jour','ok');}
+  saveD();renderAll();cov('ov-form');
+}
+function deleteItem(id){
+  const item = gI(id);
+  D.items = D.items.filter(i=>i.id!==id);
+  saveD();renderAll();cov('ov-view');cov('ov-form');
+  toast('🗑 «'+(item?.name||'Article')+'» supprimé','warn');
 }
 
-/* ══════════════════════════════════════════════
-   ROOMS (LIEUX TAB)
-══════════════════════════════════════════════ */
-function renderRooms(){
-  const el=document.getElementById('rooms-list');
-  if(!S.rooms.length){el.innerHTML='<div class="empty-st"><div class="ei">🏠</div><div class="et">AUCUNE PIÈCE — clique + PIÈCE pour commencer</div></div>';return}
-  el.innerHTML='';
-  S.rooms.forEach(rm=>{
-    const locs=S.locs.filter(l=>l.roomId===rm.id);
-    const itemCount=S.items.filter(i=>locs.some(l=>l.id===i.locationId)).length;
-    const div=document.createElement('div');
-    div.className='rcard';div.id='rc-'+rm.id;
-    div.innerHTML=`
-      <div class="rhdr" onclick="toggleRoom('${rm.id}')">
-        <div class="rdot" style="background:${rm.color}"></div>
-        <span style="font-size:18px">${rm.emoji}</span>
-        <span class="rname">${esc(rm.name)}</span>
-        <span class="rcnt">${locs.length} empl. · ${itemCount} art.</span>
-        <span class="rtog">▾</span>
+/* ════════════════════════════════════════════
+   ZONE FORM
+════════════════════════════════════════════ */
+function openAddZone(){
+  renderZoneForm({id:uid(),name:'',emoji:'🛏️',color:'zA',svgX:10,svgY:10,svgW:155,svgH:120},false);
+  sov('ov-zone');
+}
+function openEditZone(id){
+  const z = gZ(id); if(!z) return;
+  renderZoneForm({...z},true);
+  sov('ov-zone');
+}
+function renderZoneForm(d,isEdit){
+  document.getElementById('sh-zone').innerHTML=`
+    <div class="drag"></div>
+    <div class="shhdr">
+      <span style="font-size:20px">🏠</span>
+      <span class="sht">${isEdit?'MODIFIER LA PIÈCE':'NOUVELLE PIÈCE'}</span>
+      <button class="shx" onclick="cov('ov-zone')">✕</button>
+    </div>
+    <div class="ff">
+      <div><label class="fl">NOM DE LA PIÈCE *</label>
+        <input id="zn" value="${esc(d.name)}" placeholder="ex: Chambre, Cuisine…"></div>
+      <div><label class="fl">COULEUR (ZONE)</label>
+        <div class="zone-opts">
+          ${ZONE_COLORS.map(c=>`<div class="zo${d.color===c.id?' sel':''}" style="background:${c.hex}30;border-color:${d.color===c.id?'#fff':'transparent'}" data-zc="${c.id}" onclick="selZC('${d.id}','${c.id}',this)">${c.name[0]}</div>`).join('')}
+        </div>
+        <input type="hidden" id="zcol" value="${d.color}">
       </div>
-      <div class="rlocs">
-        ${locs.map(loc=>`
-          <div class="locrow" onclick="openEditLoc('${loc.id}')">
-            <span class="lrico">${loc.emoji||'📍'}</span>
-            <div class="lrinf">
-              <div class="lrname">${esc(loc.name)}</div>
-              <div class="lrsub">${S.items.filter(i=>i.locationId===loc.id).length} article(s) stocké(s)</div>
+      <div><label class="fl">ICÔNE</label>
+        <div class="emojis-row">
+          ${ROOM_EMOJIS.map(em=>`<button class="emo-btn${d.emoji===em?' sel':''}" onclick="selZE('${d.id}','${em}',this)">${em}</button>`).join('')}
+        </div>
+        <input type="hidden" id="zemi" value="${d.emoji}">
+      </div>
+      <div class="brow">
+        <button class="bsec" onclick="cov('ov-zone')">ANNULER</button>
+        <button class="bmain" onclick="saveZone('${d.id}','${isEdit}')">✓ ENREGISTRER</button>
+      </div>
+      ${isEdit?`<button class="bdel" onclick="openConf(()=>deleteZone('${d.id}'))">🗑 Supprimer cette pièce</button>`:''}
+    </div>`;
+}
+function selZC(zid,c,el){document.getElementById('zcol').value=c;document.querySelectorAll('.zo').forEach(e=>{e.classList.remove('sel');e.style.borderColor='transparent'});el.classList.add('sel');el.style.borderColor='#fff';}
+function selZE(zid,em,el){document.getElementById('zemi').value=em;document.querySelectorAll('.emo-btn').forEach(e=>e.classList.remove('sel'));el.classList.add('sel');}
+function saveZone(id,isEdit){
+  const name=document.getElementById('zn').value.trim();if(!name)return;
+  const existing=gZ(id);
+  const z={id,name,emoji:document.getElementById('zemi').value,color:document.getElementById('zcol').value,
+    svgX:existing?.svgX||10,svgY:existing?.svgY||10,svgW:existing?.svgW||155,svgH:existing?.svgH||120};
+  if(isEdit==='true'){const idx=D.zones.findIndex(x=>x.id===id);if(idx>=0)D.zones[idx]=z;}
+  else D.zones.push(z);
+  saveD();renderZones();renderMap();cov('ov-zone');toast('✓ Pièce «'+name+'» enregistrée','ok');
+}
+function deleteZone(id){
+  D.locs=D.locs.filter(l=>l.zoneId!==id);
+  D.items.forEach(i=>{if(!D.locs.some(l=>l.id===i.locationId))i.locationId=null;});
+  D.zones=D.zones.filter(z=>z.id!==id);
+  saveD();renderAll();cov('ov-zone');toast('🗑 Pièce supprimée','warn');
+}
+
+/* ════════════════════════════════════════════
+   LOC FORM
+════════════════════════════════════════════ */
+function openAddLoc(zoneId){
+  renderLocForm({id:uid(),name:'',zoneId,emoji:'🗄️',nfcTagId:null,svgX:null,svgY:null,svgW:50,svgH:20},false);
+  sov('ov-loc');
+}
+function openEditLoc(id){
+  const l=gL(id);if(!l)return;
+  renderLocForm({...l},true);
+  sov('ov-loc');
+}
+function renderLocForm(d,isEdit){
+  document.getElementById('sh-loc').innerHTML=`
+    <div class="drag"></div>
+    <div class="shhdr">
+      <span style="font-size:20px">📍</span>
+      <span class="sht">${isEdit?'MODIFIER L\'EMPLACEMENT':'NOUVEL EMPLACEMENT'}</span>
+      <button class="shx" onclick="cov('ov-loc')">✕</button>
+    </div>
+    <div class="ff">
+      <div><label class="fl">NOM DE L'EMPLACEMENT *</label>
+        <input id="lon" value="${esc(d.name)}" placeholder="ex: Tiroir A3, Étagère 2…"></div>
+      <div><label class="fl">PIÈCE</label>
+        <select id="lozid">
+          ${D.zones.map(z=>`<option value="${z.id}" ${z.id===d.zoneId?'selected':''}>${z.emoji} ${esc(z.name)}</option>`).join('')}
+        </select></div>
+      <div><label class="fl">ICÔNE</label>
+        <div class="emojis-row">
+          ${LOC_EMOJIS.map(em=>`<button class="emo-btn${d.emoji===em?' sel':''}" onclick="selLE('${d.id}','${em}',this)">${em}</button>`).join('')}
+        </div>
+        <input type="hidden" id="loemi" value="${d.emoji}">
+      </div>
+      <div class="nfcs">
+        <div class="nfcs-t">⬡ TAG NFC DU TIROIR / ÉTAGÈRE</div>
+        <div class="nfcs-id">${d.nfcTagId?'✅ Tag associé : '+d.nfcTagId.slice(0,24)+'…':'Aucun tag NFC physique associé'}</div>
+        <button class="nfc-btn-a" onclick="writeLocTagAndSave('${d.id}')">⬡ ÉCRIRE LE TAG NFC SUR CE TIROIR</button>
+      </div>
+      <div class="brow">
+        <button class="bsec" onclick="cov('ov-loc')">ANNULER</button>
+        <button class="bmain" onclick="saveLoc('${d.id}','${isEdit}')">✓ ENREGISTRER</button>
+      </div>
+      ${isEdit?`<button class="bdel" onclick="openConf(()=>deleteLoc('${d.id}'))">🗑 Supprimer</button>`:''}
+    </div>`;
+}
+function selLE(lid,em,el){document.getElementById('loemi').value=em;document.querySelectorAll('.emo-btn').forEach(e=>e.classList.remove('sel'));el.classList.add('sel');}
+function saveLoc(id,isEdit){
+  const name=document.getElementById('lon').value.trim();if(!name)return;
+  const existing=gL(id);
+  const loc={id,name,zoneId:document.getElementById('lozid').value,emoji:document.getElementById('loemi').value,
+    nfcTagId:existing?.nfcTagId||null,svgX:existing?.svgX||null,svgY:existing?.svgY||null,svgW:existing?.svgW||50,svgH:existing?.svgH||20};
+  if(isEdit==='true'){const idx=D.locs.findIndex(l=>l.id===id);if(idx>=0)D.locs[idx]=loc;}
+  else D.locs.push(loc);
+  saveD();renderZones();renderAll();cov('ov-loc');toast('✓ Emplacement «'+name+'» enregistré','ok');
+}
+function deleteLoc(id){
+  D.items.forEach(i=>{if(i.locationId===id)i.locationId=null;});
+  D.locs=D.locs.filter(l=>l.id!==id);
+  saveD();renderAll();cov('ov-loc');toast('🗑 Emplacement supprimé','warn');
+}
+
+/* ════════════════════════════════════════════
+   ZONES LIST (LIEUX TAB)
+════════════════════════════════════════════ */
+function renderZones(){
+  const el=document.getElementById('zones-list');
+  if(!D.zones.length){el.innerHTML='<div class="emp"><div class="ei">🏠</div><div class="et">AUCUNE PIÈCE — appuie sur + Pièce</div></div>';return;}
+  el.innerHTML='';
+  D.zones.forEach(z=>{
+    const locs=D.locs.filter(l=>l.zoneId===z.id);
+    const icnt=D.items.filter(i=>locs.some(l=>l.id===i.locationId)).length;
+    const hex=zC(z.color);
+    const div=document.createElement('div');
+    div.className='zone-card';div.id='zc-'+z.id;
+    div.style.borderLeftColor=hex;
+    div.innerHTML=`
+      <div class="zone-hdr" onclick="toggleZone('${z.id}')">
+        <span class="zone-em">${z.emoji}</span>
+        <span class="zone-nm" style="color:${hex}">${esc(z.name)}</span>
+        <span class="zone-cnt">${locs.length} empl. · ${icnt} art.</span>
+        <span class="zone-chev">▾</span>
+      </div>
+      <div class="zone-locs">
+        ${locs.map(loc=>{const cnt=D.items.filter(i=>i.locationId===loc.id).length;return`
+          <div class="lrow" onclick="openEditLoc('${loc.id}')">
+            <span class="lrow-em">${loc.emoji||'📍'}</span>
+            <div class="lrow-inf">
+              <div class="lrow-nm">${esc(loc.name)}</div>
+              <div class="lrow-sub">${cnt} article(s)</div>
             </div>
-            <div>
-              <span class="nfcpill ${loc.nfcTagId?'yes':'no'}">${loc.nfcTagId?'⬡ NFC':'⬡ Sans tag'}</span>
-            </div>
-          </div>`).join('')}
-        <button class="radd-loc" onclick="openAddLoc('${rm.id}')">+ Ajouter un emplacement</button>
+            <span class="lrow-nfc ${loc.nfcTagId?'y':'n'}">${loc.nfcTagId?'⬡ NFC':'⬡ —'}</span>
+          </div>`}).join('')}
+        <button class="zone-add-loc" onclick="openAddLoc('${z.id}')">＋ Ajouter un emplacement dans ${esc(z.name)}</button>
       </div>`;
     el.appendChild(div);
   });
 }
-function toggleRoom(id){
-  const card=document.getElementById('rc-'+id);
-  card.classList.toggle('exp');
+function toggleZone(id){document.getElementById('zc-'+id)?.classList.toggle('exp');}
+
+/* ════════════════════════════════════════════
+   NFC LOGIC
+════════════════════════════════════════════ */
+const NFC_OK = () => 'NDEFReader' in window;
+let nfcMode = null; // 'ranger_step1'|'ranger_step2'|'trouver'|'write_item'|'write_loc'|'loc_scan'
+let nfcCtx  = {};
+let nfcReader = null, nfcAborter = null;
+let pendingRangerItemId = null; // step 1 found item, waiting for loc tag
+
+/* ─── DOUBLE SCAN: RANGER ─── */
+function startDoubleRanger(){
+  if(!NFC_OK()){toast('NFC non supporté (Chrome Android requis)','err');return;}
+  nfcMode='ranger_step1'; nfcCtx={};
+  showNfcOv('ÉTAPE 1/2','SCANNE L\'OBJET','Approche le tag NFC de l\'objet à ranger',2,1);
+  startReader();
+}
+function startRangerItem(itemId){
+  // Called from view sheet — skip step 1, we know the item
+  if(!NFC_OK()){toast('NFC non supporté','err');return;}
+  pendingRangerItemId=itemId;
+  nfcMode='ranger_step2'; nfcCtx={itemId};
+  cov('ov-view');
+  showNfcOv('ÉTAPE 2/2','SCANNE LE TIROIR','Approche le badge NFC du tiroir ou étagère',2,2);
+  startReader();
 }
 
-/* ══════════════════════════════════════════════
-   ROOM ADD/EDIT FORM
-══════════════════════════════════════════════ */
-const EMOJIS=['🛏️','🛋️','🍳','🔧','🚿','🖥️','📦','🏋️','🚗','🌿','🎮','📚','👕','🧹','🍷'];
-const SPANS_LABEL=['Normal (1/3)','Large (2/3)','Pleine largeur'];
-function openAddRoom(){
-  renderRoomForm({id:uid(),name:'',emoji:'🛏️',color:ROOM_COLORS[0],span:1},false);
-  openOv('ov-room');
-}
-function openEditRoom(id){
-  const rm=getRoom(id);if(!rm)return;
-  renderRoomForm({...rm},true);
-  openOv('ov-room');
-}
-function renderRoomForm(d,isEdit){
-  document.getElementById('sh-room').innerHTML=`
-    <div class="shdrag"></div>
-    <div class="shhdr">
-      <span style="font-size:20px">🏠</span>
-      <span class="shtitle">${isEdit?'MODIFIER LA PIÈCE':'NOUVELLE PIÈCE'}</span>
-      <button class="shclose" onclick="closeOv('ov-room')">✕</button>
-    </div>
-    <div class="ff">
-      <div><div class="fl">NOM DE LA PIÈCE *</div><input id="rn" value="${esc(d.name)}" placeholder="ex: Chambre, Cuisine…"></div>
-      <div><div class="fl">ICÔNE</div>
-        <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:4px">
-          ${EMOJIS.map(em=>`<button onclick="selEmoji('${em}','${d.id}')" id="re-${d.id}-${em.codePointAt(0)}" style="background:${d.emoji===em?'var(--b2)':'var(--s2)'};border:1px solid ${d.emoji===em?'var(--b1)':'var(--b1)'};border-radius:8px;width:40px;height:40px;font-size:20px;cursor:pointer;transition:all .15s">${em}</button>`).join('')}
-        </div>
-        <input type="hidden" id="remi" value="${d.emoji}">
-      </div>
-      <div><div class="fl">COULEUR</div>
-        <div class="cpills" style="margin-top:4px">
-          ${ROOM_COLORS.map(c=>`<div class="cpill${d.color===c?' sel':''}" style="background:${c}" data-c="${c}" onclick="selColor('${d.id}','${c}',this)"></div>`).join('')}
-        </div>
-        <input type="hidden" id="rcol" value="${d.color}">
-      </div>
-      <div><div class="fl">LARGEUR SUR LA CARTE</div>
-        <select id="rspan">
-          ${SPANS_LABEL.map((l,i)=>`<option value="${i+1}" ${d.span===i+1?'selected':''}>${l}</option>`).join('')}
-        </select>
-      </div>
-      <div class="brow">
-        <button class="bsec" onclick="closeOv('ov-room')">ANNULER</button>
-        <button class="bmain" onclick="saveRoom('${d.id}','${isEdit}')">✓ ENREGISTRER</button>
-      </div>
-      ${isEdit?`<button class="bdel" onclick="deleteRoom('${d.id}')">🗑 Supprimer cette pièce</button>`:''}
-    </div>`;
-}
-function selEmoji(em,rid){
-  document.getElementById('remi').value=em;
-  document.querySelectorAll('[id^="re-'+rid+'-"]').forEach(b=>{b.style.background='var(--s2)'});
-  const btn=document.getElementById('re-'+rid+'-'+em.codePointAt(0));
-  if(btn)btn.style.background='var(--b2)';
-}
-function selColor(rid,c,el){
-  document.getElementById('rcol').value=c;
-  el.closest('.cpills').querySelectorAll('.cpill').forEach(p=>p.classList.remove('sel'));
-  el.classList.add('sel');
-}
-function saveRoom(id,isEdit){
-  const name=document.getElementById('rn').value.trim();if(!name)return;
-  const rm={id,name,emoji:document.getElementById('remi').value,color:document.getElementById('rcol').value,span:Number(document.getElementById('rspan').value)};
-  if(isEdit==='true'){const idx=S.rooms.findIndex(r=>r.id===id);if(idx>=0)S.rooms[idx]=rm;}
-  else S.rooms.push(rm);
-  saveS();renderRooms();renderMap();closeOv('ov-room');toast('Pièce « '+name+' » enregistrée','ok');
-}
-function deleteRoom(id){
-  openConfirm(()=>{
-    S.locs=S.locs.filter(l=>l.roomId!==id);
-    S.items.forEach(i=>{if(S.locs.every(l=>l.id!==i.locationId))i.locationId=null});
-    S.rooms=S.rooms.filter(r=>r.id!==id);
-    saveS();renderAll();closeOv('ov-room');toast('Pièce supprimée','warn');
-  });
+/* ─── TROUVER ─── */
+function startTrouver(){
+  if(!NFC_OK()){toast('NFC non supporté','err');return;}
+  nfcMode='trouver'; nfcCtx={};
+  showNfcOv('','SCANNE UN OBJET','Approche le tag NFC de l\'objet que tu cherches',1,1);
+  startReader();
 }
 
-/* ══════════════════════════════════════════════
-   LOCATION ADD/EDIT FORM
-══════════════════════════════════════════════ */
-const LOC_EMOJIS=['🗄️','📚','📦','🚪','🔩','🧰','🧺','🛒','🗃️','🏷️'];
-function openAddLoc(roomId){
-  renderLocForm({id:uid(),name:'',roomId,emoji:'🗄️',nfcTagId:null},false);
-  openOv('ov-loc');
-}
-function openEditLoc(id){
-  const loc=getLoc(id);if(!loc)return;
-  renderLocForm({...loc},true);
-  openOv('ov-loc');
-}
-function renderLocForm(d,isEdit){
-  document.getElementById('sh-loc').innerHTML=`
-    <div class="shdrag"></div>
-    <div class="shhdr">
-      <span style="font-size:20px">📍</span>
-      <span class="shtitle">${isEdit?'MODIFIER L\'EMPLACEMENT':'NOUVEL EMPLACEMENT'}</span>
-      <button class="shclose" onclick="closeOv('ov-loc')">✕</button>
-    </div>
-    <div class="ff">
-      <div><div class="fl">NOM DE L'EMPLACEMENT *</div><input id="lon" value="${esc(d.name)}" placeholder="ex: Tiroir A3, Étagère 2…"></div>
-      <div><div class="fl">PIÈCE</div>
-        <select id="lorm">
-          ${S.rooms.map(r=>`<option value="${r.id}" ${r.id===d.roomId?'selected':''}>${r.emoji} ${esc(r.name)}</option>`).join('')}
-        </select></div>
-      <div><div class="fl">ICÔNE</div>
-        <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:4px">
-          ${LOC_EMOJIS.map(em=>`<button onclick="selLocEmoji('${em}','${d.id}')" id="le-${d.id}-${em.codePointAt(0)}" style="background:${d.emoji===em?'var(--b2)':'var(--s2)'};border:1px solid var(--b1);border-radius:8px;width:40px;height:40px;font-size:20px;cursor:pointer">${em}</button>`).join('')}
-        </div>
-        <input type="hidden" id="loemi" value="${d.emoji}">
-      </div>
-      <div class="nfc-sec" style="margin:0">
-        <div class="nfc-st">⬡ TAG NFC DE L'EMPLACEMENT</div>
-        <div class="nfc-tagid">${d.nfcTagId?'Tag associé : '+d.nfcTagId.slice(0,20)+'…':'Aucun tag NFC associé'}</div>
-        <button class="nfc-btnw" onclick="writeLocTag('${d.id}','${d.name||'emplacement'}')">⬡ ÉCRIRE TAG NFC SUR CE TIROIR/ÉTAGÈRE</button>
-      </div>
-      <div class="brow">
-        <button class="bsec" onclick="closeOv('ov-loc')">ANNULER</button>
-        <button class="bmain" onclick="saveLoc('${d.id}','${isEdit}')">✓ ENREGISTRER</button>
-      </div>
-      ${isEdit?`<button class="bdel" onclick="deleteLoc('${d.id}')">🗑 Supprimer</button>`:''}
-    </div>`;
-}
-function selLocEmoji(em,lid){
-  document.getElementById('loemi').value=em;
-  document.querySelectorAll('[id^="le-'+lid+'-"]').forEach(b=>b.style.background='var(--s2)');
-  const btn=document.getElementById('le-'+lid+'-'+em.codePointAt(0));
-  if(btn)btn.style.background='var(--b2)';
-}
-function saveLoc(id,isEdit){
-  const name=document.getElementById('lon').value.trim();if(!name)return;
-  const existing=getLoc(id);
-  const loc={id,name,roomId:document.getElementById('lorm').value,emoji:document.getElementById('loemi').value,nfcTagId:existing?existing.nfcTagId:null};
-  if(isEdit==='true'){const idx=S.locs.findIndex(l=>l.id===id);if(idx>=0)S.locs[idx]=loc;}
-  else S.locs.push(loc);
-  saveS();renderRooms();renderAll();closeOv('ov-loc');toast('Emplacement « '+name+' » enregistré','ok');
-}
-function deleteLoc(id){
-  openConfirm(()=>{
-    S.items.forEach(i=>{if(i.locationId===id)i.locationId=null});
-    S.locs=S.locs.filter(l=>l.id!==id);
-    saveS();renderAll();closeOv('ov-loc');toast('Emplacement supprimé','warn');
-  });
+/* ─── LOC SCAN ─── */
+function startLocScan(){
+  if(!NFC_OK()){toast('NFC non supporté','err');return;}
+  nfcMode='loc_scan'; nfcCtx={};
+  showNfcOv('','SCANNER UN BADGE','Approche n\'importe quel tag NFC',1,1);
+  startReader();
 }
 
-/* ══════════════════════════════════════════════
-   MAP
-══════════════════════════════════════════════ */
-function renderMap(){
-  const canvas=document.getElementById('map-canvas');
-  canvas.innerHTML='';
-  S.rooms.forEach(rm=>{
-    const locs=S.locs.filter(l=>l.roomId===rm.id);
-    const itemCount=S.items.filter(i=>locs.some(l=>l.id===i.locationId)).length;
-    const div=document.createElement('div');
-    div.className='mrm'+(rm.span>1?' span'+rm.span:'');
-    div.style.cssText=`background:${rm.color}22;border-color:${rm.color}44;border-width:1px;border-style:solid`;
-    div.innerHTML=`
-      <div class="mr-em">${rm.emoji}</div>
-      <div class="mr-nm">${esc(rm.name)}</div>
-      <div class="mr-ct">${locs.length} empl. · ${itemCount} articles</div>`;
-    div.addEventListener('click',()=>openRoomDetail(rm.id));
-    // long press to edit
-    let pressTimer;
-    div.addEventListener('touchstart',()=>{pressTimer=setTimeout(()=>openEditRoom(rm.id),700)});
-    div.addEventListener('touchend',()=>clearTimeout(pressTimer));
-    canvas.appendChild(div);
-  });
-}
-function openRoomDetail(id){
-  const rm=getRoom(id);if(!rm)return;
-  const locs=S.locs.filter(l=>l.roomId===id);
-  const items=S.items.filter(i=>locs.some(l=>l.id===i.locationId));
-  const sh=document.getElementById('sh-rmdet');
+/* ─── WRITE ─── */
+function startEcrireMenu(){
+  const sh=document.getElementById('sh-write');
+  const items=D.items.map(i=>`<option value="${i.id}">${(CAT_META[i.category]||CAT_META.other).icon} ${esc(i.name)}</option>`).join('');
+  const locs=D.locs.map(l=>{const z=gZ(l.zoneId);return`<option value="${l.id}">${l.emoji} ${esc(l.name)}${z?' ('+esc(z.name)+')':''}</option>`;}).join('');
   sh.innerHTML=`
-    <div class="shdrag"></div>
-    <div class="shhdr">
-      <span style="font-size:22px">${rm.emoji}</span>
-      <span class="shtitle">${esc(rm.name)}</span>
-      <button class="shclose" onclick="closeOv('ov-rmdet')">✕</button>
-    </div>
-    <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
-      ${locs.map(l=>`<div style="background:${rm.color}22;border:1px solid ${rm.color}44;border-radius:7px;padding:6px 10px;font-family:var(--mono);font-size:10px;color:rgba(255,255,255,.7)">${l.emoji||'📍'} ${esc(l.name)} · ${S.items.filter(i=>i.locationId===l.id).length} art.</div>`).join('')}
-      ${!locs.length?`<div style="color:var(--t3);font-family:var(--mono);font-size:10px">Aucun emplacement dans cette pièce</div>`:''}
-    </div>
-    ${items.length?`
-      <div class="fl" style="margin-bottom:8px">ARTICLES DANS CETTE PIÈCE</div>
-      <div class="rm-items-list">
-        ${items.map(item=>{
-          const meta=CAT_META[item.category];
-          const loc=getLoc(item.locationId);
-          return`<div class="rm-item-row" onclick="openView('${item.id}');closeOv('ov-rmdet')">
-            <span class="rim-cat">${meta.icon}</span>
-            <div class="rim-inf">
-              <div class="rim-name">${esc(item.name)}</div>
-              <div class="rim-loc">${loc?loc.emoji+' '+esc(loc.name):''}</div>
-            </div>
-            <span class="rim-qty" style="color:${qColor(item)}">${item.qty}</span>
-          </div>`;
-        }).join('')}
+    <div class="drag"></div>
+    <div class="shhdr"><span style="font-size:20px">✍️</span><span class="sht">ÉCRIRE UN TAG NFC</span><button class="shx" onclick="cov('ov-write')">✕</button></div>
+    <div style="display:flex;flex-direction:column;gap:14px">
+      <div style="background:var(--s2);border:1px solid var(--b1);border-radius:11px;padding:14px">
+        <label class="fl">TAG D'ARTICLE — choisir l'article</label>
+        <select id="wri-item">${items}</select>
+        <button class="nfc-btn-a" style="margin-top:10px" onclick="writeItemTagFromSel()">⬡ ÉCRIRE TAG ARTICLE</button>
       </div>
-    `:`<div class="empty-st" style="padding:30px 0"><div class="ei" style="font-size:30px">📦</div><div class="et">AUCUN ARTICLE ICI</div></div>`}
-    <div style="display:flex;gap:8px;margin-top:14px">
-      <button class="bsec" onclick="openEditRoom('${id}');closeOv('ov-rmdet')">✎ Modifier la pièce</button>
-      <button class="bmain" onclick="openAddLoc('${id}');closeOv('ov-rmdet')">+ Emplacement</button>
+      <div style="background:var(--s2);border:1px solid var(--b1);border-radius:11px;padding:14px">
+        <label class="fl">TAG D'EMPLACEMENT — choisir le lieu</label>
+        <select id="wri-loc">${locs}</select>
+        <button class="nfc-btn-a" style="margin-top:10px" onclick="writeLocTagFromSel()">⬡ ÉCRIRE TAG EMPLACEMENT</button>
+      </div>
     </div>`;
-  openOv('ov-rmdet');
+  sov('ov-write');
+}
+function writeItemTagFromSel(){ const id=document.getElementById('wri-item')?.value; if(id)writeItemTag(id); }
+function writeLocTagFromSel(){ const id=document.getElementById('wri-loc')?.value; if(id)writeLocTag(id); }
+
+async function writeItemTag(itemId){
+  if(!NFC_OK()){toast('NFC non supporté','err');return;}
+  const item=gI(itemId);if(!item)return;
+  showNfcOv('','APPROCHE LE TAG NFC…','Pose le tag NFC sur l\'objet «'+item.name+'»',1,1);
+  try{
+    const w=new NDEFReader();
+    await w.write({records:[{recordType:'text',data:PI+itemId}]});
+    item.nfcTagId=PI+itemId;
+    saveD();renderAll();hideNfcOv();
+    toast('⬡ Tag écrit sur «'+item.name+'»','nfc');
+    if(document.getElementById('ov-view').classList.contains('on'))refreshView(itemId);
+  }catch(e){hideNfcOv();if(e.name!=='AbortError')toast('Écriture échouée : '+e.message,'err');}
+}
+async function writeLocTag(locId){
+  if(!NFC_OK()){toast('NFC non supporté','err');return;}
+  const loc=gL(locId);if(!loc)return;
+  showNfcOv('','APPROCHE LE TAG NFC…','Colle ce tag sur le tiroir «'+loc.name+'»',1,1);
+  try{
+    const w=new NDEFReader();
+    await w.write({records:[{recordType:'text',data:PL+locId}]});
+    loc.nfcTagId=PL+locId;
+    saveD();renderZones();hideNfcOv();
+    toast('⬡ Badge écrit pour «'+loc.name+'»','nfc');
+  }catch(e){hideNfcOv();if(e.name!=='AbortError')toast('Écriture échouée : '+e.message,'err');}
+}
+async function writeLocTagAndSave(locId){
+  // Save loc first then write
+  const name=document.getElementById('lon')?.value.trim();
+  if(name){
+    const existing=gL(locId)||{};
+    const loc={...existing,id:locId,name,zoneId:document.getElementById('lozid').value,emoji:document.getElementById('loemi').value,nfcTagId:existing.nfcTagId||null,svgX:existing.svgX||null,svgY:existing.svgY||null,svgW:existing.svgW||50,svgH:existing.svgH||20};
+    const idx=D.locs.findIndex(l=>l.id===locId);
+    if(idx>=0)D.locs[idx]=loc; else D.locs.push(loc);
+    saveD();
+  }
+  cov('ov-loc');
+  await writeLocTag(locId);
 }
 
-/* ══════════════════════════════════════════════
-   NFC
-══════════════════════════════════════════════ */
-const NFC_OK=()=>'NDEFReader' in window;
-let nfcMode=null; // 'global'|'itemLoc'|'writeItem'|'writeLoc'
-let nfcCtx={};    // context data
-let nfcReader=null,nfcAborter=null;
-
-/* Global scan: scan any tag, open item or assign location */
-async function toggleGlobalScan(){
-  if(nfcReader){cancelNfc();return}
-  if(!NFC_OK()){toast('NFC non supporté (Chrome Android requis)','err');return}
-  nfcMode='global';nfcCtx={};
-  showNfcOv('SCANNER UN TAG NFC','Approche un tag item ou un badge d\'emplacement');
-  await startReader();
-}
-
-/* Scan location tag to set item's location */
-async function startItemLocScan(itemId){
-  if(!NFC_OK()){toast('NFC non supporté','err');return}
-  nfcMode='itemLoc';nfcCtx={itemId};
-  closeOv('ov-view');
-  showNfcOv('SCANNER LE BADGE D\'EMPLACEMENT','Approche le badge NFC du tiroir / étagère');
-  await startReader();
-}
-
-/* Scan location tag (from lieux tab) */
-async function startLocScan(){
-  if(!NFC_OK()){toast('NFC non supporté','err');return}
-  nfcMode='global';nfcCtx={};
-  showNfcOv('SCANNER UN BADGE NFC','Approche n\'importe quel tag — item ou emplacement');
-  await startReader();
-}
-
+/* ─── READER ─── */
 async function startReader(){
   try{
     nfcAborter=new AbortController();
     nfcReader=new NDEFReader();
     await nfcReader.scan({signal:nfcAborter.signal});
     nfcReader.onreading=handleRead;
-    nfcReader.onreadingerror=()=>toast('Erreur de lecture NFC','err');
-    document.getElementById('fab-nfc').classList.add('active');
-  }catch(err){
+    nfcReader.onreadingerror=()=>{toast('Erreur de lecture NFC','err');};
+  }catch(e){
     nfcReader=null;nfcAborter=null;hideNfcOv();
-    if(err.name!=='AbortError'){
-      if(err.name==='NotAllowedError')toast('Permission NFC refusée','err');
-      else toast('NFC: '+err.message,'err');
-    }
+    if(e.name==='NotAllowedError')toast('Permission NFC refusée','err');
+    else if(e.name!=='AbortError')toast('NFC: '+e.message,'err');
   }
 }
 
@@ -941,143 +1369,128 @@ function handleRead({message}){
   for(const rec of message.records){
     if(rec.recordType==='text'){
       const dec=new TextDecoder(rec.encoding||'utf-8');
-      const txt=dec.decode(rec.data);
-      processNfcText(txt);
+      processTag(dec.decode(rec.data));
       return;
     }
   }
-  toast('Tag NFC non reconnu (format inconnu)','warn');
-  cancelNfc();
+  toast('Tag NFC non reconnu','warn');
+  if(nfcMode!=='ranger_step2')cancelNfc();
 }
 
-function processNfcText(txt){
-  cancelNfc();
-  if(txt.startsWith(PREFX_I)){
-    const id=txt.slice(PREFX_I.length);
-    const item=getItem(id);
-    if(nfcMode==='itemLoc'&&nfcCtx.itemId){
-      toast('Tag article scanné — scanne un badge d\'emplacement !','warn');
-      return;
+function processTag(txt){
+  const isItem = txt.startsWith(PI);
+  const isLoc  = txt.startsWith(PL);
+  const id     = isItem?txt.slice(PI.length):isLoc?txt.slice(PL.length):null;
+
+  if(nfcMode==='ranger_step1'){
+    if(!isItem){toast('⬡ Scanne le tag d\'un ARTICLE d\'abord !','warn');return;}
+    const item=gI(id);
+    if(!item){toast('Article NFC inconnu — inscris-le d\'abord','warn');cancelNfc();return;}
+    pendingRangerItemId=id;
+    nfcMode='ranger_step2';
+    // step 2
+    showNfcOv('ÉTAPE 2/2','SCANNE LE TIROIR',
+      '✅ «'+item.name+'» détecté !\nMaintenant scanne le badge du tiroir…',2,2);
+    return; // keep reader alive
+  }
+
+  if(nfcMode==='ranger_step2'){
+    if(!isLoc){toast('⬡ Scanne le badge d\'un EMPLACEMENT !','warn');return;}
+    const loc=gL(id);
+    if(!loc){toast('Emplacement NFC inconnu — configure-le d\'abord','warn');cancelNfc();return;}
+    const item=gI(pendingRangerItemId);
+    if(item){
+      item.locationId=loc.id;
+      saveD();renderAll();
     }
-    if(item){toast('⬡ Article : '+item.name,'nfc');openView(id)}
-    else toast('Tag article inconnu','warn');
-  } else if(txt.startsWith(PREFX_L)){
-    const id=txt.slice(PREFX_L.length);
-    const loc=getLoc(id);
-    if(nfcMode==='itemLoc'&&nfcCtx.itemId){
-      // Assign location to item
-      const item=getItem(nfcCtx.itemId);
-      if(item&&loc){
-        item.locationId=loc.id;
-        saveS();renderAll();
-        const rm=getRoom(loc.roomId);
-        toast('📍 Placé dans : '+loc.name+(rm?' ('+rm.name+')':''),'nfc');
-        openView(nfcCtx.itemId);
-      } else toast('Emplacement inconnu','warn');
-    } else if(loc){
-      const rm=getRoom(loc.roomId);
-      toast('⬡ Emplacement : '+loc.name+(rm?' · '+rm.name:''),'nfc');
-      openEditLoc(id);
-    } else toast('Badge emplacement inconnu','warn');
-  } else {
-    toast('Tag NFC non reconnu','warn');
+    cancelNfc();
+    const zone=gZ(loc.zoneId);
+    toast('📍 «'+(item?.name||'?')+'» → '+loc.name+(zone?' ('+zone.name+')':''),'nfc');
+    if(item)openView(item.id);
+    return;
   }
-}
 
-/* Write item NFC tag */
-async function writeItemTag(itemId){
-  if(!NFC_OK()){toast('NFC non supporté','err');return}
-  const item=getItem(itemId);if(!item)return;
-  nfcMode='writeItem';nfcCtx={itemId};
-  showNfcOv('APPROCHE LE TAG NFC…','Écriture du tag pour "'+item.name+'"');
-  try{
-    const w=new NDEFReader();
-    await w.write({records:[{recordType:'text',data:PREFX_I+itemId}]});
-    item.nfcTagId=PREFX_I+itemId;
-    saveS();renderAll();
-    hideNfcOv();
-    toast('⬡ Tag écrit pour : '+item.name,'nfc');
-    refreshView(itemId);
-  }catch(err){
-    hideNfcOv();
-    if(err.name!=='AbortError')toast('Écriture échouée : '+err.message,'err');
+  if(nfcMode==='trouver'){
+    cancelNfc();
+    if(isItem){
+      const item=gI(id);
+      if(item){openView(id);toast('🔍 «'+item.name+'» trouvé !','nfc');}
+      else toast('Article inconnu','warn');
+    } else if(isLoc){
+      const loc=gL(id);
+      if(loc)openLocDetail(id);
+      else toast('Emplacement inconnu','warn');
+    } else toast('Tag non reconnu','warn');
+    return;
   }
-  nfcMode=null;nfcCtx={};
-}
 
-/* Write location NFC tag */
-async function writeLocTag(locId,locName){
-  if(!NFC_OK()){toast('NFC non supporté','err');return}
-  showNfcOv('APPROCHE LE TAG NFC…','Place le tag sur le tiroir/étagère "'+locName+'"');
-  try{
-    const w=new NDEFReader();
-    await w.write({records:[{recordType:'text',data:PREFX_L+locId}]});
-    const loc=getLoc(locId);
-    if(loc){loc.nfcTagId=PREFX_L+locId;saveS();renderRooms();}
-    hideNfcOv();
-    toast('⬡ Badge emplacement écrit !','nfc');
-    // refresh loc form
-    const sh=document.getElementById('sh-loc');
-    if(sh.innerHTML)openEditLoc(locId);
-  }catch(err){
-    hideNfcOv();
-    if(err.name!=='AbortError')toast('Écriture échouée : '+err.message,'err');
+  if(nfcMode==='loc_scan'){
+    cancelNfc();
+    if(isLoc){const loc=gL(id);if(loc){openLocDetail(id);toast('📍 Emplacement : '+loc.name,'nfc');}else toast('Badge emplacement inconnu','warn');}
+    else if(isItem){const item=gI(id);if(item){openView(id);toast('⬡ Article : '+item.name,'nfc');}else toast('Tag article inconnu','warn');}
+    else toast('Tag non reconnu','warn');
+    return;
   }
 }
 
 function cancelNfc(){
   if(nfcAborter)nfcAborter.abort();
-  nfcReader=null;nfcAborter=null;nfcMode=null;nfcCtx={};
+  nfcReader=null;nfcAborter=null;nfcMode=null;nfcCtx={};pendingRangerItemId=null;
   hideNfcOv();
-  document.getElementById('fab-nfc').classList.remove('active');
 }
-function showNfcOv(title,sub){document.getElementById('nov-title').textContent=title;document.getElementById('nov-sub').textContent=sub;document.getElementById('nfc-ov').classList.add('show')}
-function hideNfcOv(){document.getElementById('nfc-ov').classList.remove('show')}
 
-/* ══════════════════════════════════════════════
+function showNfcOv(step,title,sub,total,current){
+  const so=document.getElementById('nfc-ov');
+  document.getElementById('nov-step').textContent=step;
+  document.getElementById('nov-title').textContent=title;
+  document.getElementById('nov-sub').textContent=sub;
+  // progress dots
+  const pg=document.getElementById('nov-prog');
+  pg.innerHTML='';
+  for(let i=1;i<=total;i++){
+    const d=document.createElement('div');
+    d.className='npd'+(i<current?' done':i===current?' active':'');
+    pg.appendChild(d);
+  }
+  so.classList.add('on');
+}
+function hideNfcOv(){document.getElementById('nfc-ov').classList.remove('on');}
+
+function renderNfcCompat(){
+  const el=document.getElementById('nfc-compat');
+  if(NFC_OK())
+    el.innerHTML='<span style="color:var(--ok)">✅ NFC disponible</span> — Toutes les fonctions sont actives.';
+  else
+    el.innerHTML='<span style="color:var(--err)">✕ NFC non disponible</span><br>Requis : Chrome pour Android v89+.<br>Sur iOS et desktop, les boutons NFC sont désactivés.<br>Le reste de l\'app (inventaire, carte, lieux) fonctionne normalement.';
+}
+
+/* ════════════════════════════════════════════
    OVERLAY / MODAL HELPERS
-══════════════════════════════════════════════ */
-function openOv(id){document.getElementById(id).classList.add('show')}
-function closeOv(id){document.getElementById(id).classList.remove('show')}
-document.addEventListener('keydown',e=>{if(e.key==='Escape'){['ov-view','ov-form','ov-room','ov-loc','ov-rmdet'].forEach(closeOv);cancelNfc()}});
+════════════════════════════════════════════ */
+function sov(id){document.getElementById(id).classList.add('on');}
+function cov(id){document.getElementById(id).classList.remove('on');}
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){['ov-view','ov-form','ov-zone','ov-loc','ov-write','ov-rmdet'].forEach(cov);cancelNfc();}});
 
 let confCb=null;
-function openConfirm(cb){confCb=cb;document.getElementById('conf-ov').classList.add('show');document.getElementById('conf-ok').onclick=()=>{confCb&&confCb();closeConf()}}
-function closeConf(){document.getElementById('conf-ov').classList.remove('show');confCb=null}
-function openDeleteConfirm(itemId){
-  openConfirm(()=>{
-    const item=getItem(itemId);
-    S.items=S.items.filter(i=>i.id!==itemId);
-    saveS();renderAll();closeOv('ov-view');closeOv('ov-form');
-    toast('« '+(item?.name||'Article')+' » supprimé','warn');
-  });
-}
+function openConf(cb){confCb=cb;document.getElementById('conf-ov').classList.add('on');document.getElementById('conf-ok').onclick=()=>{confCb&&confCb();cconf();};}
+function cconf(){document.getElementById('conf-ov').classList.remove('on');confCb=null;}
 
-let toastT=null;
+let _toastT=null;
 function toast(msg,type='ok'){
-  clearTimeout(toastT);
-  const ic={ok:'✓',warn:'⚠',err:'✕',nfc:'⬡'}[type]||'✓';
-  const cl={ok:'var(--ok)',warn:'var(--warn)',err:'var(--err)',nfc:'var(--nfc)'}[type];
-  document.getElementById('ti').innerHTML=`<span style="color:${cl}">${ic}</span> ${esc(msg)}`;
-  document.getElementById('toast').classList.add('show');
-  toastT=setTimeout(()=>document.getElementById('toast').classList.remove('show'),2800);
+  clearTimeout(_toastT);
+  const cols={ok:'var(--ok)',warn:'var(--warn)',err:'var(--err)',nfc:'var(--nfc)'};
+  const icons={ok:'✓',warn:'⚠',err:'✕',nfc:'⬡'};
+  document.getElementById('ti').innerHTML=`<span style="color:${cols[type]||cols.ok}">${icons[type]||'✓'}</span> ${esc(msg)}`;
+  document.getElementById('toast').classList.add('on');
+  _toastT=setTimeout(()=>document.getElementById('toast').classList.remove('on'),3000);
 }
 
-/* ══════════════════════════════════════════════
-   CAT TABS EVENT
-══════════════════════════════════════════════ */
-document.querySelectorAll('.ctab').forEach(b=>{
-  b.addEventListener('click',()=>setFilterCat(b.dataset.cat));
-});
-
-/* ══════════════════════════════════════════════
+/* ════════════════════════════════════════════
    INIT
-══════════════════════════════════════════════ */
-loadS();renderAll();
-if(!NFC_OK()){
-  document.getElementById('fab-nfc').style.opacity='.35';
-  document.getElementById('fab-nfc').title='NFC non disponible (Chrome Android requis)';
-}
+════════════════════════════════════════════ */
+loadD();
+renderAll();
+renderNfcCompat();
 </script>
 </body>
 </html>
