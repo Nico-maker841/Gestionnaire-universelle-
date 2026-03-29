@@ -44,9 +44,10 @@ button,input,select,textarea{font-family:var(--f-b)}
 /* ═══════════════════════════ LAYOUT ═══════════════════════════ */
 #app{max-width:440px;margin:0 auto;min-height:100vh}
 #content{padding-bottom:68px}
-.tab{display:none;animation:tabIn .2s ease}
-.tab.on{display:block}
-@keyframes tabIn{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
+/* Tabs: hidden by default via JS init — do NOT rely on CSS-only display:none
+   because inline style always wins over class-based rules */
+.tab{animation:tabIn .22s ease}
+@keyframes tabIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
 
 /* ═══════════════════════════ HEADER ═══════════════════════════ */
 #hdr{
@@ -775,11 +776,30 @@ function qcol(item){const s=qs(item);return s==='out'?'var(--err)':s==='low'?'va
 
 /* ══════════════ TAB NAV ══════════════ */
 let activeTab='home';
+
+function initTabs(){
+  // Hide all tabs via inline style (beats any CSS specificity issue)
+  document.querySelectorAll('.tab').forEach(t=>{
+    t.style.display='none';
+  });
+  // Show home by default
+  const home=document.getElementById('tab-home');
+  if(home)home.style.display='block';
+}
+
 function goTab(id){
   activeTab=id;
-  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('on',t.id==='tab-'+id));
-  document.querySelectorAll('.nb').forEach(b=>b.classList.toggle('on',b.dataset.t===id));
-  document.getElementById('fab').classList.toggle('h',id!=='stock');
+  // Use inline style.display — guaranteed to override any CSS
+  document.querySelectorAll('.tab').forEach(t=>{
+    const show=t.id==='tab-'+id;
+    t.style.display=show?'block':'none';
+    if(show)t.classList.add('on'); else t.classList.remove('on');
+  });
+  document.querySelectorAll('.nb').forEach(b=>{
+    if(b.dataset.t===id)b.classList.add('on'); else b.classList.remove('on');
+  });
+  const fab=document.getElementById('fab');
+  if(fab)fab.classList.toggle('h',id!=='stock');
   if(id==='home') renderHome();
   if(id==='map')  renderMap();
   if(id==='lx')   renderZones();
@@ -1411,6 +1431,7 @@ function toast(msg,type='ok'){
 
 /* ══════════════ INIT ══════════════ */
 loadD();
+initTabs();   // <-- must run first to hide all tabs via inline style
 renderAll();
 renderHome();
 renderNfcTab();
