@@ -571,6 +571,26 @@ textarea.fi{resize:vertical;min-height:68px}
   padding:4px 10px;border-radius:20px;font-family:var(--f-m);font-size:8.5px;
   border:1px solid;
 }
+
+/* ═══ API KEY SETTINGS ═══ */
+.apikey-banner{
+  background:linear-gradient(135deg,#fbbf2410,#f8717108);
+  border:1px solid #fbbf2430;border-radius:var(--r);
+  padding:13px 14px;display:flex;align-items:flex-start;gap:10px;
+  cursor:pointer;transition:all .15s;margin-bottom:0;
+}
+.apikey-banner:hover{border-color:#fbbf2450}
+.apikey-banner.ok{background:linear-gradient(135deg,#3de8a010,#22d3ee08);border-color:#3de8a030}
+.apikey-set-btn{
+  width:100%;background:linear-gradient(135deg,#fbbf24,#f97316);
+  color:#000;border:none;font-weight:800;font-size:14px;
+  padding:13px;border-radius:var(--rs);
+  display:flex;align-items:center;justify-content:center;gap:8px;
+}
+.apikey-input-wrap{position:relative;display:flex;align-items:center}
+.apikey-input-wrap .fi{padding-right:42px;font-family:var(--f-m);font-size:11px;letter-spacing:.5px}
+.apikey-eye{position:absolute;right:12px;background:none;border:none;color:var(--t3);font-size:16px;cursor:pointer}
+
 </style>
 </head>
 <body>
@@ -728,6 +748,7 @@ textarea.fi{resize:vertical;min-height:68px}
         </div>
       </div>
       <div style="background:var(--s1);border:1px solid var(--b1);border-radius:var(--rs);padding:13px;font-family:var(--f-m);font-size:9.5px;line-height:1.7;color:var(--t2)" id="nfc-compat"></div>
+      <div id="apikey-banner-nfc" onclick="openApiKeySheet()" style="margin-top:2px"></div>
     </div>
   </div>
 
@@ -765,6 +786,11 @@ textarea.fi{resize:vertical;min-height:68px}
 <!-- AI UNKNOWN TAG SHEET -->
 <div class="ov" id="ov-ai" onclick="cov('ov-ai')">
   <div class="sh" onclick="event.stopPropagation()" id="sh-ai"></div>
+</div>
+
+<!-- API KEY SETTINGS SHEET -->
+<div class="ov" id="ov-apikey" onclick="cov('ov-apikey')">
+  <div class="sh" onclick="event.stopPropagation()" id="sh-apikey"></div>
 </div>
 
 <!-- NFC write overlay (only for write ops) -->
@@ -1422,6 +1448,18 @@ function openAiSheet(rawTagTxt, tagType){
 }
 
 async function runAiAnalysis(){
+  // Check API key first
+  const apiKey = localStorage.getItem('ss-anthropic-key') || '';
+  if(!apiKey){
+    document.getElementById('ai-result').innerHTML=`
+      <div style="background:#fbbf2410;border:1px solid #fbbf2430;border-radius:var(--rs);padding:14px;font-family:var(--f-m);font-size:10px;color:var(--warn)">
+        ⚠ Clé API Anthropic requise<br>
+        <span style="color:var(--t3);font-size:9px;line-height:1.6">Configure ta clé API pour utiliser l'IA.</span>
+        <button class="ai-btn" style="margin-top:10px" onclick="cov('ov-ai');openApiKeySheet()">🔑 Configurer ma clé API</button>
+      </div>`;
+    return;
+  }
+
   const desc = document.getElementById('ai-desc')?.value.trim() || '';
   const ctx  = document.getElementById('ai-ctx')?.value.trim()  || '';
   const btn  = document.getElementById('ai-analyze-btn');
@@ -1433,7 +1471,6 @@ async function runAiAnalysis(){
   const catsCtx = Object.entries(CATS).map(([k,v])=>`${k} (${v.l})`).join(', ');
   const existingItems = D.items.slice(0,15).map(i=>i.name).join(', ');
 
-  // Show loading state
   btn.disabled = true;
   btn.innerHTML = '<div class="ai-spinner" style="width:18px;height:18px;margin:0"></div> Analyse en cours<span class="ai-thinking-dots"></span>';
   res.innerHTML = `
@@ -1479,40 +1516,60 @@ ${ctx  ? `Contexte supplémentaire: "${ctx}"` : ''}
 
 Analyse cet objet et propose un enregistrement optimal dans l'inventaire.`;
 
-  try{
-    const resp = await fetch('https://api.anthropic.com/v1/messages',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({
-        model:'claude-sonnet-4-20250514',
-        max_tokens:800,
-        system: systemPrompt,
-        messages:[{role:'user',content:userMsg}]
-      })
-    });
+  const body = JSON.stringify({
+    model:'claude-sonnet-4-20250514',
+    max_tokens:800,
+    system: systemPrompt,
+    messages:[{role:'user',content:userMsg}]
+  });
 
-    if(!resp.ok){
-      const errData = await resp.json().catch(()=>({}));
-      throw new Error(errData?.error?.message || `HTTP ${resp.status}`);
+  // Try direct first, then CORS proxy fallback
+  const endpoints = [
+    { url:'https://api.anthropic.com/v1/messages', direct:true },
+    { url:'https://corsproxy.io/?url=https://api.anthropic.com/v1/messages', direct:false },
+  ];
+
+  let lastErr = null;
+  for(const ep of endpoints){
+    try{
+      const headers = {'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01'};
+      if(!ep.direct) headers['x-requested-with']='XMLHttpRequest';
+      const resp = await fetch(ep.url,{method:'POST',headers,body});
+      if(!resp.ok){
+        const errData = await resp.json().catch(()=>({}));
+        const msg = errData?.error?.message || `HTTP ${resp.status}`;
+        // If it's an auth error, no point retrying with proxy
+        if(resp.status===401||resp.status===403){
+          throw new Error('Clé API invalide — vérifie ta clé sur console.anthropic.com');
+        }
+        throw new Error(msg);
+      }
+      const data = await resp.json();
+      const rawText = data.content?.find(b=>b.type==='text')?.text || '';
+      const clean = rawText.replace(/```json[\s\S]*?```|```[\s\S]*?```/g, s=>s.replace(/```json|```/g,'')).trim();
+      const sug = JSON.parse(clean);
+      aiSuggestion = sug;
+      renderAiSuggestion(sug);
+      return; // success
+    }catch(err){
+      lastErr = err;
+      // If auth error or parse error, stop trying
+      if(err.message.includes('Clé API') || err.message.includes('JSON')) break;
     }
-
-    const data = await resp.json();
-    const rawText = data.content?.find(b=>b.type==='text')?.text || '';
-    // Strip any accidental markdown fences
-    const clean = rawText.replace(/```json|```/g,'').trim();
-    const sug = JSON.parse(clean);
-    aiSuggestion = sug;
-    renderAiSuggestion(sug);
-
-  }catch(err){
-    res.innerHTML=`
-      <div style="background:#f8717110;border:1px solid #f8717130;border-radius:var(--rs);padding:14px;font-family:var(--f-m);font-size:10px;color:var(--err)">
-        ✕ Erreur IA : ${esc(err.message)}<br>
-        <span style="color:var(--t3);font-size:9px">Vérifie ta connexion internet ou remplis manuellement.</span>
-      </div>`;
-    btn.disabled=false;
-    btn.innerHTML='↺ RÉESSAYER';
   }
+
+  // All attempts failed
+  res.innerHTML=`
+    <div style="background:#f8717110;border:1px solid #f8717130;border-radius:var(--rs);padding:14px;font-family:var(--f-m);font-size:10px;color:var(--err)">
+      ✕ Erreur IA : ${esc(lastErr?.message||'Inconnu')}<br>
+      <span style="color:var(--t3);font-size:9px;line-height:1.6;display:block;margin-top:4px">
+        ${lastErr?.message?.includes('Clé API')
+          ? '👉 Va dans Paramètres IA pour corriger ta clé.'
+          : '👉 Vérifie ta connexion internet. Les appels CORS sont parfois bloqués sur mobile.'}
+      </span>
+    </div>`;
+  btn.disabled=false;
+  btn.innerHTML='↺ RÉESSAYER';
 }
 
 function renderAiSuggestion(sug){
@@ -1787,6 +1844,7 @@ function showWriteMenu(){
 /* ─── NFC tab render ─── */
 function renderNfcTab(){
   updateNfcUI();
+  renderApiKeyBanner();
   const el=document.getElementById('nfc-compat');
   el.innerHTML=NFC_OK()
     ?'<span style="color:var(--ok)">✅ NFC disponible</span> — Scan continu actif sur cet appareil.'
@@ -1796,7 +1854,7 @@ function renderNfcTab(){
 /* ══════════════ OVERLAYS ══════════════ */
 function sov(id){document.getElementById(id).classList.add('on');}
 function cov(id){document.getElementById(id).classList.remove('on');}
-document.addEventListener('keydown',e=>{if(e.key==='Escape'){['ov-view','ov-form','ov-zone','ov-loc','ov-write','ov-det','ov-ai'].forEach(cov);}});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){['ov-view','ov-form','ov-zone','ov-loc','ov-write','ov-det','ov-ai','ov-apikey'].forEach(cov);}});
 let confCb=null;
 function openConf(cb){confCb=cb;document.getElementById('conf-ov').classList.add('on');document.getElementById('conf-ok').onclick=()=>{confCb&&confCb();cconf();};}
 function cconf(){document.getElementById('conf-ov').classList.remove('on');confCb=null;}
@@ -1810,6 +1868,112 @@ function toast(msg,type='ok'){
   _tt=setTimeout(()=>document.getElementById('toast').classList.remove('on'),3000);
 }
 
+/* ══════════════════════════════════════════════════════
+   🔑 API KEY MANAGEMENT
+══════════════════════════════════════════════════════ */
+const API_KEY_SK = 'ss-anthropic-key';
+
+function getApiKey(){ return localStorage.getItem(API_KEY_SK)||''; }
+function hasApiKey(){ return !!getApiKey(); }
+
+function openApiKeySheet(){
+  const key = getApiKey();
+  const sh = document.getElementById('sh-apikey');
+  sh.innerHTML = `
+    <div class="drag"></div>
+    <div class="sh-hdr">
+      <span style="font-size:22px">🔑</span>
+      <span class="sh-t">CLÉ API ANTHROPIC</span>
+      <button class="sh-x" onclick="cov('ov-apikey')">✕</button>
+    </div>
+
+    <div style="background:var(--s2);border:1px solid var(--b1);border-radius:var(--r);padding:14px;margin-bottom:14px">
+      <div style="font-family:var(--f-m);font-size:8px;color:var(--t3);letter-spacing:1.5px;margin-bottom:8px">POURQUOI EN AI-JE BESOIN ?</div>
+      <div style="font-family:var(--f-m);font-size:9.5px;color:var(--t2);line-height:1.7">
+        L'IA de Smart-Storage utilise <strong style="color:var(--viol)">Claude Sonnet</strong> d'Anthropic pour analyser tes tags NFC.<br><br>
+        Ta clé est stockée <strong style="color:var(--ok)">uniquement sur ton téléphone</strong> (localStorage), jamais envoyée à un serveur tiers.
+      </div>
+    </div>
+
+    <div style="background:var(--s2);border:1px solid var(--b1);border-radius:var(--r);padding:14px;margin-bottom:14px">
+      <div style="font-family:var(--f-m);font-size:8px;color:var(--t3);letter-spacing:1.5px;margin-bottom:8px">COMMENT OBTENIR UNE CLÉ GRATUITE ?</div>
+      <div style="font-family:var(--f-m);font-size:9.5px;color:var(--t2);line-height:1.8">
+        1. Va sur <span style="color:var(--blue)">console.anthropic.com</span><br>
+        2. Crée un compte (gratuit)<br>
+        3. Dans <strong style="color:var(--t1)">"API Keys"</strong> → <strong style="color:var(--t1)">"Create Key"</strong><br>
+        4. Copie la clé (commence par <code style="color:var(--viol);background:var(--bg);padding:1px 5px;border-radius:4px">sk-ant-</code>)<br>
+        5. Colle-la ci-dessous ✓
+      </div>
+    </div>
+
+    <div class="ff">
+      <div>
+        <label class="fl">TA CLÉ API *</label>
+        <div class="apikey-input-wrap">
+          <input class="fi" type="password" id="apikey-input"
+            value="${esc(key)}"
+            placeholder="sk-ant-api03-..."
+            autocomplete="off" autocorrect="off" spellcheck="false">
+          <button class="apikey-eye" onclick="toggleKeyVis()" id="apikey-eye-btn">👁</button>
+        </div>
+        <div style="font-family:var(--f-m);font-size:8px;color:var(--t3);margin-top:5px">
+          ${key ? '✅ Une clé est déjà configurée — tu peux la remplacer.' : '⚠ Aucune clé configurée.'}
+        </div>
+      </div>
+
+      <button class="apikey-set-btn" onclick="saveApiKey()">
+        🔑 ENREGISTRER LA CLÉ
+      </button>
+
+      ${key ? `<button class="btn-del" onclick="clearApiKey()">🗑 Supprimer la clé</button>` : ''}
+    </div>`;
+  sov('ov-apikey');
+}
+
+function toggleKeyVis(){
+  const inp = document.getElementById('apikey-input');
+  const btn = document.getElementById('apikey-eye-btn');
+  if(!inp)return;
+  inp.type = inp.type==='password'?'text':'password';
+  btn.textContent = inp.type==='password'?'👁':'🙈';
+}
+
+function saveApiKey(){
+  const val = document.getElementById('apikey-input')?.value.trim()||'';
+  if(!val){ toast('Entre une clé API valide','err'); return; }
+  if(!val.startsWith('sk-ant-')){ toast('La clé doit commencer par sk-ant-','err'); return; }
+  localStorage.setItem(API_KEY_SK, val);
+  cov('ov-apikey');
+  renderNfcTab();
+  toast('🔑 Clé API enregistrée — l\'IA est prête !','ok');
+}
+
+function clearApiKey(){
+  localStorage.removeItem(API_KEY_SK);
+  cov('ov-apikey');
+  renderNfcTab();
+  toast('Clé API supprimée','warn');
+}
+
+function renderApiKeyBanner(){
+  const el = document.getElementById('apikey-banner-nfc');
+  if(!el)return;
+  const hasKey = hasApiKey();
+  el.innerHTML = `
+    <div class="apikey-banner ${hasKey?'ok':''}" onclick="openApiKeySheet()">
+      <span style="font-size:22px">${hasKey?'✅':'🔑'}</span>
+      <div style="flex:1">
+        <div style="font-weight:700;font-size:12.5px;color:${hasKey?'var(--ok)':'var(--warn)'};margin-bottom:3px">
+          ${hasKey ? 'Clé API configurée — IA active' : 'Clé API requise pour l\'IA'}
+        </div>
+        <div style="font-family:var(--f-m);font-size:8.5px;color:var(--t3);line-height:1.5">
+          ${hasKey ? 'Clique pour modifier ou supprimer ta clé.' : 'Configure ta clé Anthropic pour activer l\'analyse IA des tags inconnus.'}
+        </div>
+      </div>
+      <span style="color:var(--t3)">›</span>
+    </div>`;
+}
+
 /* ══════════════ INIT ══════════════ */
 loadD();
 initTabs();   // <-- must run first to hide all tabs via inline style
@@ -1819,4 +1983,3 @@ renderNfcTab();
 </script>
 </body>
 </html>
-
