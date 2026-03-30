@@ -497,6 +497,80 @@ textarea.fi{resize:vertical;min-height:68px}
 .empty-st{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:56px 20px;gap:10px;grid-column:1/-1}
 .empty-st .ei{font-size:44px;opacity:.1}
 .empty-st .et{font-family:var(--f-m);font-size:9px;color:var(--t3);letter-spacing:2px}
+
+/* ═══ AI SHEET ═══ */
+.ai-tag-raw{
+  background:var(--bg);border:1px solid var(--b1);border-radius:var(--rs);
+  padding:8px 11px;font-family:var(--f-m);font-size:9px;color:var(--t3);
+  word-break:break-all;margin-bottom:14px;
+}
+.ai-state{
+  display:flex;flex-direction:column;align-items:center;gap:14px;
+  padding:24px 16px;text-align:center;
+}
+.ai-spinner{
+  width:56px;height:56px;border-radius:50%;
+  border:2px solid var(--b2);border-top-color:var(--viol);
+  animation:spin .8s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+.ai-thinking-dots::after{
+  content:'';animation:dots 1.4s steps(4,end) infinite;
+}
+@keyframes dots{
+  0%{content:''}25%{content:'.'}50%{content:'..'}75%{content:'...'}100%{content:''}
+}
+.ai-badge{
+  display:inline-flex;align-items:center;gap:6px;
+  background:linear-gradient(135deg,#c084fc18,#5b9eff18);
+  border:1px solid #c084fc30;border-radius:20px;
+  padding:5px 12px;font-family:var(--f-m);font-size:9px;color:var(--viol);
+  margin-bottom:4px;
+}
+.ai-suggestion-card{
+  background:linear-gradient(135deg,#c084fc0a,#5b9eff0a);
+  border:1px solid #c084fc25;border-radius:var(--r);
+  padding:14px;margin-bottom:12px;
+}
+.ai-field-row{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:8px 0;border-bottom:1px solid var(--b1);
+}
+.ai-field-row:last-child{border-bottom:none}
+.ai-field-k{font-family:var(--f-m);font-size:8px;color:var(--t3);letter-spacing:1px}
+.ai-field-v{font-size:13px;color:var(--t2);display:flex;align-items:center;gap:5px}
+.ai-conf{
+  display:flex;align-items:center;gap:8px;
+  padding:9px 12px;border-radius:var(--rs);
+  font-family:var(--f-m);font-size:9px;margin-bottom:12px;
+}
+.ai-conf.high{background:#3de8a010;border:1px solid #3de8a030;color:var(--ok)}
+.ai-conf.med {background:#fbbf2410;border:1px solid #fbbf2430;color:var(--warn)}
+.ai-conf.low {background:#f8717110;border:1px solid #f8717130;color:var(--err)}
+.ai-reasoning{
+  background:var(--s2);border-radius:var(--rs);padding:10px 12px;
+  font-family:var(--f-m);font-size:9px;color:var(--t3);line-height:1.6;
+  margin-bottom:12px;font-style:italic;
+}
+.ai-btn{
+  width:100%;background:linear-gradient(135deg,var(--viol),var(--blue));
+  color:#fff;border:none;font-weight:700;font-size:14px;
+  padding:13px;border-radius:var(--rs);margin-bottom:8px;
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  transition:opacity .15s;
+}
+.ai-btn:hover{opacity:.9}
+.ai-btn:disabled{opacity:.35;cursor:not-allowed}
+.ai-edit-btn{
+  width:100%;background:var(--s2);color:var(--t2);border:1px solid var(--b2);
+  font-weight:600;font-size:13px;padding:11px;border-radius:var(--rs);
+  display:flex;align-items:center;justify-content:center;gap:7px;
+}
+.ai-cat-chip{
+  display:inline-flex;align-items:center;gap:4px;
+  padding:4px 10px;border-radius:20px;font-family:var(--f-m);font-size:8.5px;
+  border:1px solid;
+}
 </style>
 </head>
 <body>
@@ -643,6 +717,14 @@ textarea.fi{resize:vertical;min-height:68px}
             <div><div class="na-t">ÉCRIRE UN TAG NFC</div><div class="na-s">Associe un tag physique à un article ou lieu</div></div>
             <span class="na-arr">›</span>
           </div>
+          <div class="na" style="border-color:#c084fc25;background:linear-gradient(135deg,#c084fc08,#5b9eff05)" onclick="openAiSheet('manual_'+Date.now(),'unknown')">
+            <div class="na-ico" style="background:linear-gradient(135deg,#c084fc18,#5b9eff18);border:1px solid #c084fc25">✦</div>
+            <div>
+              <div class="na-t" style="background:linear-gradient(135deg,var(--viol),var(--blue));-webkit-background-clip:text;-webkit-text-fill-color:transparent">AJOUTER VIA L'IA</div>
+              <div class="na-s">Décris un objet → l'IA remplit tout automatiquement</div>
+            </div>
+            <span class="na-arr">›</span>
+          </div>
         </div>
       </div>
       <div style="background:var(--s1);border:1px solid var(--b1);border-radius:var(--rs);padding:13px;font-family:var(--f-m);font-size:9.5px;line-height:1.7;color:var(--t2)" id="nfc-compat"></div>
@@ -679,6 +761,11 @@ textarea.fi{resize:vertical;min-height:68px}
 <div class="ov" id="ov-loc"   onclick="cov('ov-loc')"><div class="sh"  onclick="event.stopPropagation()" id="sh-loc"></div></div>
 <div class="ov" id="ov-write" onclick="cov('ov-write')"><div class="sh" onclick="event.stopPropagation()" id="sh-write"></div></div>
 <div class="ov" id="ov-det"   onclick="cov('ov-det')"><div class="sh"  onclick="event.stopPropagation()" id="sh-det"></div></div>
+
+<!-- AI UNKNOWN TAG SHEET -->
+<div class="ov" id="ov-ai" onclick="cov('ov-ai')">
+  <div class="sh" onclick="event.stopPropagation()" id="sh-ai"></div>
+</div>
 
 <!-- NFC write overlay (only for write ops) -->
 <div id="nfc-ov">
@@ -1201,7 +1288,12 @@ function handleLiveTag(txt){
   if(nfcMode==='ranger_s1'){
     if(!isI){toast('⬡ Scan le tag d\'un ARTICLE d\'abord','warn');return;}
     const item=gI(id);
-    if(!item){toast('Article inconnu — inscris-le d\'abord','warn');exitMode();return;}
+    if(!item){
+      // Unknown item tag in ranger mode → AI to the rescue
+      exitMode();
+      openAiSheet(txt,'item');
+      return;
+    }
     pendingItemId=id;nfcMode='ranger_s2';
     updateNfcUI();
     toast('✅ «'+item.name+'» — maintenant scanne le tiroir !','nfc');
@@ -1237,9 +1329,259 @@ function handleLiveTag(txt){
     return;
   }
   // Mode libre — identifie automatiquement
-  if(isI){const item=gI(id);item?(openView(id),toast('⬡ «'+item.name+'» détecté !','nfc')):toast('Tag article inconnu — associe-le d\'abord','warn');}
-  else if(isL){const loc=gL(id);loc?(openLocDetail(id),toast('📍 Emplacement : '+loc.name,'nfc')):toast('Badge emplacement inconnu','warn');}
-  else toast('Tag NFC non reconnu (format inconnu)','warn');
+  if(isI){const item=gI(id);item?(openView(id),toast('⬡ «'+item.name+'» détecté !','nfc')):openAiSheet(txt,'item');}
+  else if(isL){const loc=gL(id);loc?(openLocDetail(id),toast('📍 Emplacement : '+loc.name,'nfc')):openAiSheet(txt,'loc');}
+  else openAiSheet(txt,'unknown');
+}
+
+/* ══════════════════════════════════════════════════════
+   ✦ AI ENGINE — Claude Sonnet (via Anthropic API)
+══════════════════════════════════════════════════════ */
+let aiPendingTagTxt = null;
+let aiSuggestion    = null;
+
+function openAiSheet(rawTagTxt, tagType){
+  aiPendingTagTxt = rawTagTxt;
+  aiSuggestion    = null;
+
+  const locs = D.locs.map(l=>{const z=gZ(l.zoneId);return`${l.name}${z?' ('+z.name+')':''} [id:${l.id}]`;}).join(', ');
+  const cats = Object.entries(CATS).map(([k,v])=>`${k}=${v.l}`).join(', ');
+
+  const sh = document.getElementById('sh-ai');
+  sh.innerHTML = `
+    <div class="drag"></div>
+    <div class="sh-hdr">
+      <span style="font-size:22px">🤖</span>
+      <span class="sh-t">TAG INCONNU DÉTECTÉ</span>
+      <button class="sh-x" onclick="cov('ov-ai')">✕</button>
+    </div>
+    <div class="ai-badge">✦ SMART-STORAGE IA · Claude Sonnet</div>
+    <p style="font-family:var(--f-m);font-size:9px;color:var(--t3);line-height:1.7;margin-bottom:12px">
+      Ce tag NFC n'est pas encore enregistré dans ton inventaire.<br>
+      Décris l'objet et l'IA remplira tout automatiquement ✨
+    </p>
+    <div class="ai-tag-raw">TAG ID : ${esc(rawTagTxt.slice(0,60))}${rawTagTxt.length>60?'…':''}</div>
+    <div>
+      <label class="fl">QU'EST-CE QUE C'EST ? (optionnel)</label>
+      <input class="fi" id="ai-desc" placeholder="ex: câble HDMI, tournevis, Arduino Nano…" style="margin-bottom:10px">
+    </div>
+    <div>
+      <label class="fl">CONTEXTE SUPPLÉMENTAIRE (optionnel)</label>
+      <input class="fi" id="ai-ctx" placeholder="ex: pack de 3, acheté en 2024, marque Bosch…" style="margin-bottom:14px">
+    </div>
+    <button class="ai-btn" id="ai-analyze-btn" onclick="runAiAnalysis()">
+      ✦ ANALYSER AVEC L'IA
+    </button>
+    <button class="ai-edit-btn" onclick="openAiManualForm()">
+      ✎ Remplir manuellement à la place
+    </button>
+    <div id="ai-result" style="margin-top:14px"></div>`;
+
+  sov('ov-ai');
+  // Auto-focus description field
+  setTimeout(()=>document.getElementById('ai-desc')?.focus(), 350);
+}
+
+async function runAiAnalysis(){
+  const desc = document.getElementById('ai-desc')?.value.trim() || '';
+  const ctx  = document.getElementById('ai-ctx')?.value.trim()  || '';
+  const btn  = document.getElementById('ai-analyze-btn');
+  const res  = document.getElementById('ai-result');
+  if(!btn||!res)return;
+
+  // Build context for Claude
+  const locsCtx = D.locs.map(l=>{const z=gZ(l.zoneId);return `"${l.name}"${z?' dans '+z.name:''} (id:${l.id})`;}).join(', ') || 'aucun emplacement configuré';
+  const catsCtx = Object.entries(CATS).map(([k,v])=>`${k} (${v.l})`).join(', ');
+  const existingItems = D.items.slice(0,15).map(i=>i.name).join(', ');
+
+  // Show loading state
+  btn.disabled = true;
+  btn.innerHTML = '<div class="ai-spinner" style="width:18px;height:18px;margin:0"></div> Analyse en cours<span class="ai-thinking-dots"></span>';
+  res.innerHTML = `
+    <div class="ai-state">
+      <div class="ai-spinner"></div>
+      <div style="font-family:var(--f-m);font-size:10px;color:var(--viol)">CLAUDE ANALYSE LE TAG<span class="ai-thinking-dots"></span></div>
+      <div style="font-family:var(--f-m);font-size:8.5px;color:var(--t3)">Identification · Catégorisation · Suggestion d'emplacement</div>
+    </div>`;
+
+  const systemPrompt = `Tu es l'IA intégrée à l'application Smart-Storage NFC, un gestionnaire d'inventaire personnel.
+Ton rôle est d'identifier automatiquement un objet à partir d'un tag NFC inconnu et de proposer comment l'enregistrer dans l'inventaire.
+
+CONTEXTE DE L'INVENTAIRE ACTUEL:
+- Emplacements disponibles: ${locsCtx}
+- Catégories disponibles: ${catsCtx}
+- Exemples d'articles déjà présents: ${existingItems || 'aucun pour l\'instant'}
+
+RÈGLES ABSOLUES:
+- Réponds UNIQUEMENT en JSON valide, sans markdown, sans backticks, sans commentaires
+- Le JSON doit être parseable directement avec JSON.parse()
+- Sois précis, concis, et adapté à un usage personnel/maker/DIY
+- Pour suggestedLocationId, utilise exactement l'id entre parenthèses des emplacements listés, ou null si aucun n'est adapté
+- confidence: "high" si tu es sûr à >80%, "medium" entre 50-80%, "low" en dessous
+
+FORMAT JSON ATTENDU (exactement):
+{
+  "name": "Nom précis de l'objet",
+  "category": "tool|book|electronic|cable|other",
+  "emoji": "emoji le plus représentatif",
+  "unit": "unité de mesure adaptée",
+  "qty": 1,
+  "minQty": 1,
+  "note": "note utile courte ou chaîne vide",
+  "suggestedLocationId": "id_emplacement ou null",
+  "suggestedLocationName": "nom lisible de l'emplacement ou null",
+  "confidence": "high|medium|low",
+  "reasoning": "Explication courte en français (1-2 phrases) de pourquoi tu proposes ça"
+}`;
+
+  const userMsg = `Tag NFC scanné avec l'ID/contenu: "${aiPendingTagTxt}"
+${desc ? `Description donnée par l'utilisateur: "${desc}"` : 'Aucune description fournie.'}
+${ctx  ? `Contexte supplémentaire: "${ctx}"` : ''}
+
+Analyse cet objet et propose un enregistrement optimal dans l'inventaire.`;
+
+  try{
+    const resp = await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:800,
+        system: systemPrompt,
+        messages:[{role:'user',content:userMsg}]
+      })
+    });
+
+    if(!resp.ok){
+      const errData = await resp.json().catch(()=>({}));
+      throw new Error(errData?.error?.message || `HTTP ${resp.status}`);
+    }
+
+    const data = await resp.json();
+    const rawText = data.content?.find(b=>b.type==='text')?.text || '';
+    // Strip any accidental markdown fences
+    const clean = rawText.replace(/```json|```/g,'').trim();
+    const sug = JSON.parse(clean);
+    aiSuggestion = sug;
+    renderAiSuggestion(sug);
+
+  }catch(err){
+    res.innerHTML=`
+      <div style="background:#f8717110;border:1px solid #f8717130;border-radius:var(--rs);padding:14px;font-family:var(--f-m);font-size:10px;color:var(--err)">
+        ✕ Erreur IA : ${esc(err.message)}<br>
+        <span style="color:var(--t3);font-size:9px">Vérifie ta connexion internet ou remplis manuellement.</span>
+      </div>`;
+    btn.disabled=false;
+    btn.innerHTML='↺ RÉESSAYER';
+  }
+}
+
+function renderAiSuggestion(sug){
+  const res = document.getElementById('ai-result');
+  const btn = document.getElementById('ai-analyze-btn');
+  if(!res)return;
+  if(btn){btn.style.display='none';}
+
+  const catMeta = CATS[sug.category]||CATS.other;
+  const confLabel = {high:'Confiance élevée',medium:'Confiance moyenne',low:'Confiance faible'}[sug.confidence]||'?';
+  const confIcon  = {high:'✓',medium:'~',low:'?'}[sug.confidence]||'?';
+
+  res.innerHTML = `
+    <div style="font-family:var(--f-m);font-size:8px;color:var(--viol);letter-spacing:2px;margin-bottom:10px">✦ SUGGESTION DE L'IA</div>
+
+    <div class="ai-conf ${sug.confidence}">
+      <span style="font-size:16px">${confIcon}</span>
+      <div>
+        <div style="font-weight:700;font-size:11px">${confLabel}</div>
+        <div style="font-size:8px;opacity:.7">${sug.confidence==='high'?'L\'IA est sûre de cette identification':'Tu peux modifier les champs avant de confirmer'}</div>
+      </div>
+    </div>
+
+    <div class="ai-suggestion-card">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
+        <div style="width:52px;height:52px;border-radius:14px;background:#c084fc15;border:1px solid #c084fc25;display:flex;align-items:center;justify-content:center;font-size:26px;flex-shrink:0">${sug.emoji}</div>
+        <div>
+          <div style="font-weight:800;font-size:16px;color:var(--t1)">${esc(sug.name)}</div>
+          <div style="margin-top:4px">
+            <span class="ai-cat-chip" style="color:${catMeta===CATS.tool?'var(--orng)':catMeta===CATS.book?'var(--blue)':catMeta===CATS.electronic?'var(--green)':catMeta===CATS.cable?'var(--viol)':'var(--grey)'};border-color:currentColor;background:currentColor;background:transparent;border-opacity:.3">
+              ${catMeta.e} ${catMeta.l}
+            </span>
+          </div>
+        </div>
+      </div>
+      <div class="ai-field-row"><span class="ai-field-k">QUANTITÉ</span><span class="ai-field-v">${sug.qty} <span style="font-size:11px;color:var(--t3)">${esc(sug.unit)}</span></span></div>
+      <div class="ai-field-row"><span class="ai-field-k">SEUIL MIN.</span><span class="ai-field-v">${sug.minQty} ${esc(sug.unit)}</span></div>
+      ${sug.note?`<div class="ai-field-row"><span class="ai-field-k">NOTE</span><span class="ai-field-v">${esc(sug.note)}</span></div>`:''}
+      <div class="ai-field-row">
+        <span class="ai-field-k">EMPLACEMENT SUGGÉRÉ</span>
+        <span class="ai-field-v">${sug.suggestedLocationName?'📍 '+esc(sug.suggestedLocationName):'<span style="color:var(--t3)">Non déterminé</span>'}</span>
+      </div>
+    </div>
+
+    <div class="ai-reasoning">💬 ${esc(sug.reasoning)}</div>
+
+    <button class="ai-btn" onclick="confirmAiAndAdd()">
+      ✦ CONFIRMER ET AJOUTER À L'INVENTAIRE
+    </button>
+    <button class="ai-edit-btn" style="margin-bottom:8px" onclick="openAiPrefillForm()">
+      ✎ Modifier avant d'ajouter
+    </button>
+    <button class="ai-edit-btn" onclick="runAiAnalysis()">
+      ↺ Relancer l'analyse
+    </button>`;
+}
+
+function confirmAiAndAdd(){
+  if(!aiSuggestion)return;
+  const sug = aiSuggestion;
+  const newId = uid();
+  const item = {
+    id: newId,
+    name: sug.name,
+    category: sug.category,
+    qty: sug.qty||1,
+    unit: sug.unit||'pièce',
+    locationId: sug.suggestedLocationId||null,
+    minQty: sug.minQty||1,
+    note: sug.note||'',
+    nfcTagId: aiPendingTagTxt, // auto-link the tag!
+  };
+  D.items.unshift(item);
+  saveD();renderAll();
+  cov('ov-ai');
+  toast('✦ «'+sug.name+'» ajouté et tag NFC lié !','nfc');
+  // Open view
+  setTimeout(()=>openView(newId), 200);
+}
+
+function openAiPrefillForm(){
+  if(!aiSuggestion)return;
+  const sug = aiSuggestion;
+  cov('ov-ai');
+  // Pre-fill item form with AI suggestion
+  const fakeItem = {
+    id: uid(),
+    name: sug.name,
+    category: sug.category,
+    qty: sug.qty||1,
+    unit: sug.unit||'pièce',
+    locationId: sug.suggestedLocationId||null,
+    minQty: sug.minQty||1,
+    note: sug.note||'',
+    nfcTagId: aiPendingTagTxt,
+  };
+  renderItemForm(fakeItem,'add');
+  sov('ov-form');
+}
+
+function openAiManualForm(){
+  cov('ov-ai');
+  const newItem = {
+    id: uid(), name:'', category:'tool', qty:1, unit:'pièce',
+    locationId:null, minQty:1, note:'', nfcTagId: aiPendingTagTxt
+  };
+  renderItemForm(newItem,'add');
+  sov('ov-form');
 }
 
 /* ─── Enter modes ─── */
@@ -1415,7 +1757,7 @@ function renderNfcTab(){
 /* ══════════════ OVERLAYS ══════════════ */
 function sov(id){document.getElementById(id).classList.add('on');}
 function cov(id){document.getElementById(id).classList.remove('on');}
-document.addEventListener('keydown',e=>{if(e.key==='Escape'){['ov-view','ov-form','ov-zone','ov-loc','ov-write','ov-det'].forEach(cov);}});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){['ov-view','ov-form','ov-zone','ov-loc','ov-write','ov-det','ov-ai'].forEach(cov);}});
 let confCb=null;
 function openConf(cb){confCb=cb;document.getElementById('conf-ov').classList.add('on');document.getElementById('conf-ok').onclick=()=>{confCb&&confCb();cconf();};}
 function cconf(){document.getElementById('conf-ov').classList.remove('on');confCb=null;}
