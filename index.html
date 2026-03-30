@@ -1516,60 +1516,104 @@ ${ctx  ? `Contexte supplémentaire: "${ctx}"` : ''}
 
 Analyse cet objet et propose un enregistrement optimal dans l'inventaire.`;
 
-  const body = JSON.stringify({
-    model:'claude-sonnet-4-20250514',
-    max_tokens:800,
-    system: systemPrompt,
-    messages:[{role:'user',content:userMsg}]
-  });
+  const workerUrl = localStorage.getItem('ss-worker-url')||'';
 
-  // Try direct first, then CORS proxy fallback
-  const endpoints = [
-    { url:'https://api.anthropic.com/v1/messages', direct:true },
-    { url:'https://corsproxy.io/?url=https://api.anthropic.com/v1/messages', direct:false },
-  ];
-
-  let lastErr = null;
-  for(const ep of endpoints){
-    try{
-      const headers = {'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01'};
-      if(!ep.direct) headers['x-requested-with']='XMLHttpRequest';
-      const resp = await fetch(ep.url,{method:'POST',headers,body});
-      if(!resp.ok){
-        const errData = await resp.json().catch(()=>({}));
-        const msg = errData?.error?.message || `HTTP ${resp.status}`;
-        // If it's an auth error, no point retrying with proxy
-        if(resp.status===401||resp.status===403){
-          throw new Error('Clé API invalide — vérifie ta clé sur console.anthropic.com');
-        }
-        throw new Error(msg);
-      }
-      const data = await resp.json();
-      const rawText = data.content?.find(b=>b.type==='text')?.text || '';
-      const clean = rawText.replace(/```json[\s\S]*?```|```[\s\S]*?```/g, s=>s.replace(/```json|```/g,'')).trim();
-      const sug = JSON.parse(clean);
-      aiSuggestion = sug;
-      renderAiSuggestion(sug);
-      return; // success
-    }catch(err){
-      lastErr = err;
-      // If auth error or parse error, stop trying
-      if(err.message.includes('Clé API') || err.message.includes('JSON')) break;
+  // Strategy: if Worker URL configured, send key in body (no CORS issue)
+  // Otherwise try direct (works in Claude.ai sandbox, fails on GitHub Pages)
+  let resp, data;
+  try{
+    if(workerUrl){
+      // ── WORKER MODE ── API key travels in request body, Worker adds it as header
+      resp = await fetch(workerUrl, {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({
+          _apiKey: apiKey,
+          model:'claude-sonnet-4-20250514',
+          max_tokens:800,
+          system:systemPrompt,
+          messages:[{role:'user',content:userMsg}]
+        })
+      });
+    } else {
+      // ── DIRECT MODE ── Works only in Claude.ai sandbox environment
+      resp = await fetch('https://api.anthropic.com/v1/messages',{
+        method:'POST',
+        headers:{
+          'Content-Type':'application/json',
+          'x-api-key':apiKey,
+          'anthropic-version':'2023-06-01'
+        },
+        body: JSON.stringify({
+          model:'claude-sonnet-4-20250514',
+          max_tokens:800,
+          system:systemPrompt,
+          messages:[{role:'user',content:userMsg}]
+        })
+      });
     }
+
+    if(!resp.ok){
+      const errBody = await resp.json().catch(()=>({}));
+      const errMsg  = errBody?.error?.message || errBody?.message || `HTTP ${resp.status}`;
+      if(resp.status===401){
+        throw new Error('AUTH_ERROR:'+errMsg);
+      }
+      throw new Error(errMsg);
+    }
+
+    data = await resp.json();
+  }catch(err){
+    const isAuth   = err.message.startsWith('AUTH_ERROR') || err.message.includes('401');
+    const isCors   = err.message.includes('fetch') || err.message.includes('network') || err.message.includes('Failed');
+    const noWorker = !workerUrl;
+
+    let errHtml = '';
+    if(isAuth){
+      errHtml = `
+        <div style="font-weight:700;margin-bottom:6px">🔑 Clé API invalide ou expirée</div>
+        <div style="font-size:9px;line-height:1.7;color:var(--t3)">
+          Vérifie ta clé sur <span style="color:var(--blue)">console.anthropic.com</span><br>
+          Elle doit commencer par <code style="color:var(--viol)">sk-ant-</code>
+        </div>
+        <button class="ai-btn" style="margin-top:10px" onclick="cov('ov-ai');openApiKeySheet()">🔑 Modifier ma clé</button>`;
+    } else if(isCors && noWorker){
+      errHtml = `
+        <div style="font-weight:700;margin-bottom:6px">🚫 Bloqué par CORS</div>
+        <div style="font-size:9px;line-height:1.7;color:var(--t3)">
+          GitHub Pages ne peut pas appeler l'API Anthropic directement.<br>
+          Tu as besoin d'un <strong style="color:var(--warn)">Cloudflare Worker</strong> gratuit comme proxy.
+        </div>
+        <button class="ai-btn" style="margin-top:10px" onclick="cov('ov-ai');openApiKeySheet()">⚙ Configurer le proxy Worker</button>`;
+    } else {
+      errHtml = `
+        <div style="font-weight:700;margin-bottom:6px">✕ Erreur : ${esc(err.message.replace('AUTH_ERROR:',''))}</div>
+        <div style="font-size:9px;color:var(--t3)">Vérifie ta connexion et ta configuration.</div>
+        <button class="ai-btn" style="margin-top:10px" onclick="runAiAnalysis()">↺ RÉESSAYER</button>`;
+    }
+
+    res.innerHTML=`
+      <div style="background:#f8717110;border:1px solid #f8717130;border-radius:var(--rs);padding:14px;font-family:var(--f-m);font-size:10px;color:var(--err)">
+        ${errHtml}
+      </div>`;
+    btn.disabled=false;btn.innerHTML='↺ RÉESSAYER';
+    return;
   }
 
-  // All attempts failed
-  res.innerHTML=`
-    <div style="background:#f8717110;border:1px solid #f8717130;border-radius:var(--rs);padding:14px;font-family:var(--f-m);font-size:10px;color:var(--err)">
-      ✕ Erreur IA : ${esc(lastErr?.message||'Inconnu')}<br>
-      <span style="color:var(--t3);font-size:9px;line-height:1.6;display:block;margin-top:4px">
-        ${lastErr?.message?.includes('Clé API')
-          ? '👉 Va dans Paramètres IA pour corriger ta clé.'
-          : '👉 Vérifie ta connexion internet. Les appels CORS sont parfois bloqués sur mobile.'}
-      </span>
+  // Parse the AI response
+  try{
+    const rawText = data.content?.find(b=>b.type==='text')?.text || '';
+    const clean = rawText.replace(/```json|```/g,'').trim();
+    const sug = JSON.parse(clean);
+    aiSuggestion = sug;
+    renderAiSuggestion(sug);
+  }catch(parseErr){
+    res.innerHTML=`<div style="background:#f8717110;border:1px solid #f8717130;border-radius:var(--rs);padding:14px;font-family:var(--f-m);font-size:10px;color:var(--err)">
+      ✕ Réponse IA invalide — réessaie.<br>
+      <button class="ai-btn" style="margin-top:8px" onclick="runAiAnalysis()">↺ RÉESSAYER</button>
     </div>`;
-  btn.disabled=false;
-  btn.innerHTML='↺ RÉESSAYER';
+    btn.disabled=false;btn.innerHTML='↺ RÉESSAYER';
+  }
 }
 
 function renderAiSuggestion(sug){
@@ -1876,57 +1920,135 @@ const API_KEY_SK = 'ss-anthropic-key';
 function getApiKey(){ return localStorage.getItem(API_KEY_SK)||''; }
 function hasApiKey(){ return !!getApiKey(); }
 
+const WORKER_SCRIPT = `// Smart-Storage NFC — Cloudflare Worker Proxy
+// Déploie ce script sur workers.cloudflare.com (gratuit)
+
+addEventListener('fetch', event => {
+  event.respondWith(handleRequest(event.request))
+})
+
+async function handleRequest(req) {
+  // Handle CORS preflight
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders() })
+  }
+  try {
+    const body = await req.json()
+    const apiKey = body._apiKey
+    if (!apiKey) return new Response(JSON.stringify({error:'No key'}),{status:400,headers:corsHeaders()})
+    // Remove the key from the body before forwarding
+    const { _apiKey, ...anthropicBody } = body
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+      },
+      body: JSON.stringify(anthropicBody),
+    })
+    const data = await resp.json()
+    return new Response(JSON.stringify(data), {
+      status: resp.status,
+      headers: corsHeaders(),
+    })
+  } catch(e) {
+    return new Response(JSON.stringify({error:e.message}),{status:500,headers:corsHeaders()})
+  }
+}
+
+function corsHeaders() {
+  return {
+    'Content-Type': 'application/json',
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type',
+  }
+}`;
+
 function openApiKeySheet(){
-  const key = getApiKey();
+  const key       = getApiKey();
+  const workerUrl = localStorage.getItem('ss-worker-url')||'';
   const sh = document.getElementById('sh-apikey');
   sh.innerHTML = `
     <div class="drag"></div>
     <div class="sh-hdr">
-      <span style="font-size:22px">🔑</span>
-      <span class="sh-t">CLÉ API ANTHROPIC</span>
+      <span style="font-size:22px">⚙️</span>
+      <span class="sh-t">PARAMÈTRES IA</span>
       <button class="sh-x" onclick="cov('ov-apikey')">✕</button>
     </div>
 
-    <div style="background:var(--s2);border:1px solid var(--b1);border-radius:var(--r);padding:14px;margin-bottom:14px">
-      <div style="font-family:var(--f-m);font-size:8px;color:var(--t3);letter-spacing:1.5px;margin-bottom:8px">POURQUOI EN AI-JE BESOIN ?</div>
-      <div style="font-family:var(--f-m);font-size:9.5px;color:var(--t2);line-height:1.7">
-        L'IA de Smart-Storage utilise <strong style="color:var(--viol)">Claude Sonnet</strong> d'Anthropic pour analyser tes tags NFC.<br><br>
-        Ta clé est stockée <strong style="color:var(--ok)">uniquement sur ton téléphone</strong> (localStorage), jamais envoyée à un serveur tiers.
+    <!-- STATUS SUMMARY -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px">
+      <div style="background:var(--s2);border:1px solid ${key?'#3de8a030':'#fbbf2430'};border-radius:var(--rs);padding:11px;text-align:center">
+        <div style="font-size:20px;margin-bottom:4px">${key?'✅':'❌'}</div>
+        <div style="font-family:var(--f-m);font-size:8px;color:${key?'var(--ok)':'var(--warn)'};letter-spacing:1px">CLÉ API</div>
+      </div>
+      <div style="background:var(--s2);border:1px solid ${workerUrl?'#3de8a030':'#f8717130'};border-radius:var(--rs);padding:11px;text-align:center">
+        <div style="font-size:20px;margin-bottom:4px">${workerUrl?'✅':'❌'}</div>
+        <div style="font-family:var(--f-m);font-size:8px;color:${workerUrl?'var(--ok)':'var(--err)'};letter-spacing:1px">WORKER PROXY</div>
       </div>
     </div>
 
-    <div style="background:var(--s2);border:1px solid var(--b1);border-radius:var(--r);padding:14px;margin-bottom:14px">
-      <div style="font-family:var(--f-m);font-size:8px;color:var(--t3);letter-spacing:1.5px;margin-bottom:8px">COMMENT OBTENIR UNE CLÉ GRATUITE ?</div>
-      <div style="font-family:var(--f-m);font-size:9.5px;color:var(--t2);line-height:1.8">
-        1. Va sur <span style="color:var(--blue)">console.anthropic.com</span><br>
-        2. Crée un compte (gratuit)<br>
-        3. Dans <strong style="color:var(--t1)">"API Keys"</strong> → <strong style="color:var(--t1)">"Create Key"</strong><br>
-        4. Copie la clé (commence par <code style="color:var(--viol);background:var(--bg);padding:1px 5px;border-radius:4px">sk-ant-</code>)<br>
-        5. Colle-la ci-dessous ✓
+    <!-- STEP 1: API KEY -->
+    <div style="background:var(--s2);border:1px solid var(--b1);border-radius:var(--r);padding:14px;margin-bottom:12px">
+      <div style="font-family:var(--f-m);font-size:8px;color:var(--nfc);letter-spacing:1.5px;margin-bottom:10px">ÉTAPE 1 — CLÉ API ANTHROPIC</div>
+      <div style="font-family:var(--f-m);font-size:9px;color:var(--t3);line-height:1.7;margin-bottom:11px">
+        1. Va sur <strong style="color:var(--blue)">console.anthropic.com</strong><br>
+        2. Crée un compte → <strong style="color:var(--t2)">"API Keys"</strong> → <strong style="color:var(--t2)">"Create Key"</strong><br>
+        3. Copie la clé ci-dessous
       </div>
+      <label class="fl">CLÉ API (commence par sk-ant-)</label>
+      <div class="apikey-input-wrap" style="margin-bottom:8px">
+        <input class="fi" type="password" id="apikey-input"
+          value="${esc(key)}" placeholder="sk-ant-api03-..."
+          autocomplete="off" autocorrect="off" spellcheck="false">
+        <button class="apikey-eye" onclick="toggleKeyVis()" id="apikey-eye-btn">👁</button>
+      </div>
+      <button class="apikey-set-btn" onclick="saveApiKey()" style="padding:11px">🔑 SAUVEGARDER LA CLÉ</button>
+      ${key?`<button class="btn-del" style="margin-top:6px" onclick="clearApiKey()">🗑 Supprimer la clé</button>`:''}
     </div>
 
-    <div class="ff">
-      <div>
-        <label class="fl">TA CLÉ API *</label>
-        <div class="apikey-input-wrap">
-          <input class="fi" type="password" id="apikey-input"
-            value="${esc(key)}"
-            placeholder="sk-ant-api03-..."
-            autocomplete="off" autocorrect="off" spellcheck="false">
-          <button class="apikey-eye" onclick="toggleKeyVis()" id="apikey-eye-btn">👁</button>
-        </div>
-        <div style="font-family:var(--f-m);font-size:8px;color:var(--t3);margin-top:5px">
-          ${key ? '✅ Une clé est déjà configurée — tu peux la remplacer.' : '⚠ Aucune clé configurée.'}
-        </div>
+    <!-- STEP 2: CLOUDFLARE WORKER -->
+    <div style="background:var(--s2);border:1px solid var(--b1);border-radius:var(--r);padding:14px;margin-bottom:12px">
+      <div style="font-family:var(--f-m);font-size:8px;color:var(--orng);letter-spacing:1.5px;margin-bottom:10px">ÉTAPE 2 — CLOUDFLARE WORKER (proxy gratuit)</div>
+      <div style="font-family:var(--f-m);font-size:9px;color:var(--t3);line-height:1.7;margin-bottom:11px">
+        GitHub Pages bloque les appels directs à l'API (CORS).<br>
+        Un <strong style="color:var(--warn)">Worker Cloudflare</strong> sert de pont — c'est <strong style="color:var(--ok)">100% gratuit</strong>.
+      </div>
+      <div style="font-family:var(--f-m);font-size:9px;color:var(--t2);line-height:1.8;margin-bottom:11px">
+        <strong style="color:var(--t1)">1.</strong> Va sur <strong style="color:var(--blue)">workers.cloudflare.com</strong> (compte gratuit)<br>
+        <strong style="color:var(--t1)">2.</strong> Nouveau Worker → <strong style="color:var(--t2)">"Edit code"</strong><br>
+        <strong style="color:var(--t1)">3.</strong> Copie le script ci-dessous → <strong style="color:var(--t2)">"Deploy"</strong><br>
+        <strong style="color:var(--t1)">4.</strong> Copie l'URL du Worker (ex: <code style="color:var(--viol);background:var(--bg);padding:1px 4px;border-radius:3px">https://xxx.workers.dev</code>)<br>
+        <strong style="color:var(--t1)">5.</strong> Colle-la dans le champ ci-dessous
       </div>
 
-      <button class="apikey-set-btn" onclick="saveApiKey()">
-        🔑 ENREGISTRER LA CLÉ
+      <!-- Script à copier -->
+      <div style="background:var(--bg);border:1px solid var(--b1);border-radius:var(--rs);padding:10px;margin-bottom:9px;font-family:var(--f-m);font-size:7.5px;color:var(--t3);white-space:pre-wrap;line-height:1.5;max-height:120px;overflow-y:auto" id="worker-script-display">${esc(WORKER_SCRIPT)}</div>
+      <button onclick="copyWorkerScript()" style="width:100%;background:var(--s3);border:1px solid var(--b2);color:var(--t2);font-family:var(--f-m);font-size:10px;padding:10px;border-radius:var(--rs);display:flex;align-items:center;justify-content:center;gap:7px;margin-bottom:11px;transition:all .15s" id="copy-script-btn">
+        📋 COPIER LE SCRIPT WORKER
       </button>
 
-      ${key ? `<button class="btn-del" onclick="clearApiKey()">🗑 Supprimer la clé</button>` : ''}
-    </div>`;
+      <label class="fl">URL DE TON WORKER</label>
+      <input class="fi" id="worker-url-input" value="${esc(workerUrl)}"
+        placeholder="https://smart-storage.TON-COMPTE.workers.dev"
+        style="margin-bottom:8px">
+      <button class="apikey-set-btn" onclick="saveWorkerUrl()" style="background:linear-gradient(135deg,var(--orng),var(--yell));padding:11px">
+        🌐 SAUVEGARDER L'URL WORKER
+      </button>
+      ${workerUrl?`<button class="btn-del" style="margin-top:6px" onclick="clearWorkerUrl()">🗑 Supprimer l'URL Worker</button>`:''}
+    </div>
+
+    <!-- TEST BUTTON -->
+    ${(key&&workerUrl)?`
+    <button class="ai-btn" onclick="testApiConnection()" id="test-btn">
+      ⚡ TESTER LA CONNEXION IA
+    </button>
+    <div id="test-result" style="margin-top:10px"></div>`:''}`;
+
+  sov('ov-apikey');
+}
   sov('ov-apikey');
 }
 
@@ -1943,31 +2065,96 @@ function saveApiKey(){
   if(!val){ toast('Entre une clé API valide','err'); return; }
   if(!val.startsWith('sk-ant-')){ toast('La clé doit commencer par sk-ant-','err'); return; }
   localStorage.setItem(API_KEY_SK, val);
-  cov('ov-apikey');
+  toast('🔑 Clé API sauvegardée !','ok');
+  openApiKeySheet(); // refresh
   renderNfcTab();
-  toast('🔑 Clé API enregistrée — l\'IA est prête !','ok');
 }
 
 function clearApiKey(){
   localStorage.removeItem(API_KEY_SK);
-  cov('ov-apikey');
-  renderNfcTab();
   toast('Clé API supprimée','warn');
+  openApiKeySheet();
+  renderNfcTab();
+}
+
+function saveWorkerUrl(){
+  const val = document.getElementById('worker-url-input')?.value.trim()||'';
+  if(!val){ toast('Entre l\'URL de ton Worker','err'); return; }
+  if(!val.startsWith('http')){ toast('L\'URL doit commencer par https://','err'); return; }
+  localStorage.setItem('ss-worker-url', val.replace(/\/$/,''));
+  toast('🌐 URL Worker sauvegardée !','ok');
+  openApiKeySheet();
+  renderNfcTab();
+}
+
+function clearWorkerUrl(){
+  localStorage.removeItem('ss-worker-url');
+  toast('URL Worker supprimée','warn');
+  openApiKeySheet();
+  renderNfcTab();
+}
+
+function copyWorkerScript(){
+  const btn = document.getElementById('copy-script-btn');
+  navigator.clipboard.writeText(WORKER_SCRIPT).then(()=>{
+    if(btn){btn.textContent='✅ SCRIPT COPIÉ !';btn.style.color='var(--ok)';btn.style.borderColor='#3de8a040';}
+    toast('Script Worker copié !','ok');
+    setTimeout(()=>{if(btn){btn.innerHTML='📋 COPIER LE SCRIPT WORKER';btn.style.color='';btn.style.borderColor='';}},2500);
+  }).catch(()=>{
+    // Fallback: select the text
+    const el=document.getElementById('worker-script-display');
+    if(el){const r=document.createRange();r.selectNode(el);window.getSelection().removeAllRanges();window.getSelection().addRange(r);}
+    toast('Sélectionne le texte puis copie','warn');
+  });
+}
+
+async function testApiConnection(){
+  const key = getApiKey();
+  const wUrl = localStorage.getItem('ss-worker-url')||'';
+  const btn = document.getElementById('test-btn');
+  const res = document.getElementById('test-result');
+  if(!btn||!res)return;
+  btn.disabled=true;btn.innerHTML='⏳ TEST EN COURS…';
+  try{
+    const endpoint = wUrl||'https://api.anthropic.com/v1/messages';
+    const isWorker = !!wUrl;
+    const body = isWorker
+      ? JSON.stringify({_apiKey:key,model:'claude-haiku-4-5-20251001',max_tokens:10,messages:[{role:'user',content:'Reply with: OK'}]})
+      : JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:10,messages:[{role:'user',content:'Reply with: OK'}]});
+    const headers = isWorker
+      ? {'Content-Type':'application/json'}
+      : {'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01'};
+    const resp = await fetch(endpoint,{method:'POST',headers,body});
+    if(resp.ok){
+      res.innerHTML=`<div style="background:#3de8a010;border:1px solid #3de8a030;border-radius:var(--rs);padding:12px;font-family:var(--f-m);font-size:10px;color:var(--ok)">✅ Connexion IA opérationnelle !<br><span style="color:var(--t3);font-size:9px">Clé API + Worker → tout fonctionne.</span></div>`;
+      toast('✅ IA connectée et prête !','ok');
+    } else {
+      const e=await resp.json().catch(()=>({}));
+      res.innerHTML=`<div style="background:#f8717110;border:1px solid #f8717130;border-radius:var(--rs);padding:12px;font-family:var(--f-m);font-size:10px;color:var(--err)">✕ Erreur ${resp.status} : ${esc(e?.error?.message||'Voir ci-dessus')}</div>`;
+    }
+  }catch(e){
+    res.innerHTML=`<div style="background:#f8717110;border:1px solid #f8717130;border-radius:var(--rs);padding:12px;font-family:var(--f-m);font-size:10px;color:var(--err)">✕ ${esc(e.message)}<br><span style="color:var(--t3);font-size:9px">${!wUrl?'CORS bloqué — configure le Worker.':''}</span></div>`;
+  }
+  btn.disabled=false;btn.innerHTML='⚡ TESTER LA CONNEXION IA';
 }
 
 function renderApiKeyBanner(){
   const el = document.getElementById('apikey-banner-nfc');
   if(!el)return;
-  const hasKey = hasApiKey();
+  const hasKey    = hasApiKey();
+  const hasWorker = !!localStorage.getItem('ss-worker-url');
+  const allOk     = hasKey && hasWorker;
   el.innerHTML = `
-    <div class="apikey-banner ${hasKey?'ok':''}" onclick="openApiKeySheet()">
-      <span style="font-size:22px">${hasKey?'✅':'🔑'}</span>
+    <div class="apikey-banner ${allOk?'ok':''}" onclick="openApiKeySheet()">
+      <span style="font-size:22px">${allOk?'✅':hasKey?'⚠️':'🔑'}</span>
       <div style="flex:1">
-        <div style="font-weight:700;font-size:12.5px;color:${hasKey?'var(--ok)':'var(--warn)'};margin-bottom:3px">
-          ${hasKey ? 'Clé API configurée — IA active' : 'Clé API requise pour l\'IA'}
+        <div style="font-weight:700;font-size:12.5px;color:${allOk?'var(--ok)':hasKey?'var(--warn)':'var(--err)'};margin-bottom:3px">
+          ${allOk ? 'IA prête — Clé + Worker configurés' : hasKey ? 'Clé OK — Worker proxy manquant' : 'Configuration IA requise'}
         </div>
         <div style="font-family:var(--f-m);font-size:8.5px;color:var(--t3);line-height:1.5">
-          ${hasKey ? 'Clique pour modifier ou supprimer ta clé.' : 'Configure ta clé Anthropic pour activer l\'analyse IA des tags inconnus.'}
+          ${allOk ? 'Tout est opérationnel. Clique pour modifier.' 
+          : hasKey ? '⚠ Configure le Worker Cloudflare pour que l\'IA fonctionne sur GitHub Pages.'
+          : 'Configure ta clé Anthropic + le Worker Cloudflare pour activer l\'IA.'}
         </div>
       </div>
       <span style="color:var(--t3)">›</span>
