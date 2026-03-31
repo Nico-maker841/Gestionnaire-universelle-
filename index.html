@@ -310,30 +310,117 @@ textarea.fi{resize:vertical;min-height:68px}
 @keyframes cardIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 
 /* ═══════════════════════════ MAP TAB ═══════════════════════════ */
-#tab-map{padding:12px;display:flex;flex-direction:column;gap:10px}
-.map-leg{display:flex;flex-wrap:wrap;gap:6px}
-.mp{
+#tab-map{padding:0}
+.map-header{
+  padding:12px 14px 8px;
+  display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+  background:rgba(4,6,15,.85);
+  -webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);
+  border-bottom:1px solid var(--b1);
+  position:sticky;top:52px;z-index:50;
+}
+.map-filter-btn{
   display:flex;align-items:center;gap:5px;
-  background:var(--s1);border:1px solid var(--b1);border-radius:20px;
-  padding:5px 11px;font-family:var(--f-m);font-size:8.5px;color:var(--t2);
+  padding:5px 11px;border-radius:20px;
+  background:none;border:1px solid var(--b1);
+  color:var(--t3);font-family:var(--f-m);font-size:8.5px;
+  cursor:pointer;transition:all .15s;white-space:nowrap;
+}
+.map-filter-btn.active{border-color:currentColor;background:color-mix(in srgb,currentColor 10%,transparent)}
+.map-filter-btn .mfb-dot{width:7px;height:7px;border-radius:2px;background:currentColor;flex-shrink:0}
+.map-filter-cnt{font-size:8px;opacity:.6;margin-left:2px}
+
+/* Room cards grid */
+.map-rooms-grid{
+  padding:12px;
+  display:flex;flex-direction:column;gap:10px;
+}
+.map-room-card{
+  border-radius:var(--r);overflow:hidden;
+  border:1px solid var(--b1);border-left:4px solid;
+  background:var(--s1);
+  transition:all .15s;
+}
+.map-room-header{
+  display:flex;align-items:center;gap:10px;
+  padding:12px 14px 10px;
+  cursor:pointer;user-select:none;
+}
+.map-room-em{font-size:22px;flex-shrink:0}
+.map-room-info{flex:1}
+.map-room-name{font-family:var(--f-d);font-size:20px;letter-spacing:1px;line-height:1}
+.map-room-meta{font-family:var(--f-m);font-size:9px;color:var(--t3);margin-top:3px}
+.map-room-count{
+  font-family:var(--f-d);font-size:32px;line-height:1;flex-shrink:0;
+}
+.map-room-expand{
+  font-size:12px;color:var(--t3);flex-shrink:0;
+  transition:transform .2s;
+}
+.map-room-card.exp .map-room-expand{transform:rotate(180deg)}
+
+/* Location grid inside room */
+.map-locs-grid{
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));
+  gap:8px;padding:0 12px 12px;
+  border-top:1px solid var(--b1);
+}
+.map-loc-tile{
+  border-radius:10px;padding:11px 10px;
+  cursor:pointer;display:flex;flex-direction:column;gap:6px;
+  transition:all .15s;border:1px solid;
+  position:relative;overflow:hidden;
+}
+.map-loc-tile:active{transform:scale(.96)}
+.map-loc-tile-top{display:flex;align-items:center;justify-content:space-between}
+.map-loc-tile-em{font-size:20px}
+.map-loc-tile-cnt{
+  font-family:var(--f-d);font-size:28px;line-height:1;
+}
+.map-loc-tile-name{
+  font-weight:700;font-size:12px;color:#fff;line-height:1.25;
+}
+.map-loc-tile-items{
+  display:flex;flex-wrap:wrap;gap:3px;margin-top:2px;
+}
+.map-loc-item-chip{
+  font-size:14px;line-height:1;
+}
+.map-loc-nfc{
+  font-family:var(--f-m);font-size:7px;
+  padding:2px 5px;border-radius:3px;
+  position:absolute;top:7px;right:7px;
+}
+.map-loc-nfc.y{color:var(--nfc);background:#22d3ee12;border:1px solid #22d3ee25}
+/* Blink animation for found location */
+@keyframes locGlow{
+  0%,100%{box-shadow:none;border-color:currentColor}
+  50%{box-shadow:0 0 16px var(--err),0 0 32px var(--err)44;border-color:var(--err)}
+}
+.map-loc-tile.found{
+  animation:locGlow .7s ease-in-out infinite;
+  border-color:var(--err)!important;
+}
+/* Empty room */
+.map-room-empty{
+  display:flex;align-items:center;justify-content:center;
+  padding:16px;font-family:var(--f-m);font-size:9px;color:var(--t3);
+  border-top:1px solid var(--b1);gap:6px;
+}
+/* Add loc button in room */
+.map-add-loc{
+  display:flex;align-items:center;justify-content:center;gap:6px;
+  padding:11px;border-radius:10px;
+  border:1px dashed var(--b2);background:none;
+  color:var(--t3);font-family:var(--f-m);font-size:9px;
   cursor:pointer;transition:all .15s;
 }
-.mp:hover{border-color:var(--b2)}
-.mp-d{width:7px;height:7px;border-radius:2px}
-.mp-c{color:var(--t3);font-size:8px}
-#map-wrap{background:var(--s1);border:1px solid var(--b1);border-radius:var(--r);overflow:hidden}
-#plan{width:100%;display:block}
-/* SVG */
-.rm-bg{fill-opacity:.06;cursor:pointer;transition:fill-opacity .18s}
-.rm-bg:hover{fill-opacity:.14}
-.rm-lbl{font-family:'Bebas Neue',cursive;font-size:12px;letter-spacing:.5px;pointer-events:none}
-.rm-sub{font-family:'DM Mono',monospace;font-size:7px;pointer-events:none;opacity:.5}
-.loc-r{fill-opacity:.18;cursor:pointer;transition:all .18s;rx:4}
-.loc-r:hover{fill-opacity:.36}
-.loc-t{font-family:'DM Mono',monospace;font-size:7px;text-anchor:middle;dominant-baseline:middle;pointer-events:none;fill:#fff;opacity:.8}
-.loc-c{font-family:'Bebas Neue',cursive;font-size:10px;text-anchor:end;pointer-events:none}
-@keyframes blinkRed{0%,100%{fill-opacity:.18;filter:none}50%{fill-opacity:.95;filter:drop-shadow(0 0 10px #f87171)}}
-.loc-found{fill:#f87171!important;animation:blinkRed .7s ease-in-out infinite}
+.map-add-loc:hover{border-color:var(--nfc);color:var(--nfc)}
+/* SVG kept for compatibility but map tab now uses cards */
+#map-wrap{display:none}
+#plan{display:none}
+.map-leg{display:none}
+
 
 /* ═══════════════════════════ NFC TAB ═══════════════════════════ */
 #tab-nfc{padding:14px;display:flex;flex-direction:column;gap:10px}
@@ -729,13 +816,14 @@ textarea.fi{resize:vertical;min-height:68px}
 
   <!-- MAP -->
   <div class="tab" id="tab-map">
-    <div style="padding:12px;display:flex;flex-direction:column;gap:10px">
-      <div class="map-leg" id="map-leg"></div>
-      <div id="map-wrap"><svg id="plan" viewBox="0 0 340 270" xmlns="http://www.w3.org/2000/svg"></svg></div>
-      <div style="background:var(--s1);border:1px solid var(--b1);border-radius:var(--rs);padding:10px 12px;font-family:var(--f-m);font-size:8.5px;color:var(--t3);line-height:1.6">
-        💡 Clique sur une pièce pour voir son contenu. <span style="color:var(--t2)">Depuis une fiche article</span> → <span style="color:var(--err)">l'emplacement clignote en rouge</span>.
-      </div>
+    <div class="map-header">
+      <div style="display:flex;gap:6px;overflow-x:auto;-ms-overflow-style:none;scrollbar-width:none;flex:1;padding-bottom:2px" id="map-filters"></div>
+      <button onclick="openAddZone()" style="background:none;border:1px solid var(--b1);color:var(--t3);font-family:var(--f-m);font-size:9px;padding:5px 11px;border-radius:20px;cursor:pointer;flex-shrink:0;transition:all .15s">＋ Pièce</button>
     </div>
+    <div class="map-rooms-grid" id="map-rooms-grid"></div>
+    <!-- Legacy SVG hidden -->
+    <div id="map-leg" style="display:none"></div>
+    <div id="map-wrap" style="display:none"><svg id="plan" viewBox="0 0 340 270" xmlns="http://www.w3.org/2000/svg"></svg></div>
   </div>
 
   <!-- NFC -->
@@ -1103,7 +1191,16 @@ function refreshView(id){
       <button class="btn-main" onclick="openEdit('${id}')">✎ MODIFIER</button>
     </div>`;
 }
-function showOnMap(id){blinkLoc=gI(id)?.locationId||null;cov('ov-view');goTab('map');renderMap();toast('🗺️ Emplacement localisé sur la carte !','nfc');}
+function showOnMap(id){
+  blinkLoc=gI(id)?.locationId||null;
+  // Find the zone of this location and filter to it
+  const loc=blinkLoc?gL(blinkLoc):null;
+  mapFilter = loc?.zoneId||null;
+  cov('ov-view');
+  goTab('map');
+  renderMap();
+  toast('🗺️ Emplacement localisé !','nfc');
+}
 
 /* ══════════════ ITEM FORM ══════════════ */
 function openAdd(){renderItemForm({id:uid(),name:'',category:'tool',qty:1,unit:'pièce',locationId:null,minQty:1,note:'',nfcTagId:null},'add');sov('ov-form');}
@@ -1145,31 +1242,136 @@ function deleteItem(id){const item=gI(id);D.items=D.items.filter(i=>i.id!==id);s
 
 /* ══════════════ SVG MAP ══════════════ */
 function renderMap(){
-  const svg=document.getElementById('plan');svg.innerHTML='';
-  svg.appendChild(mkSVG('rect',{x:0,y:0,width:340,height:270,fill:'none',stroke:'#182045','stroke-width':'1',rx:'5'}));
-  const leg=document.getElementById('map-leg');leg.innerHTML='';
-  D.zones.forEach(z=>{
-    const cnt=D.items.filter(i=>D.locs.some(l=>l.id===i.locationId&&l.zoneId===z.id)).length;
-    const el=document.createElement('div');el.className='mp';
-    el.innerHTML=`<div class="mp-d" style="background:${zHex(z.color)}"></div>${z.emoji} ${esc(z.name)}<span class="mp-c">${cnt}</span>`;
-    el.onclick=()=>openRoomDetail(z.id);leg.appendChild(el);
-    const hex=zHex(z.color);
-    const zr=mkSVG('rect',{x:z.svgX,y:z.svgY,width:z.svgW,height:z.svgH,fill:hex,rx:'5',class:'rm-bg',stroke:hex,'stroke-width':'1.2','stroke-opacity':'.3'});
-    zr.onclick=()=>openRoomDetail(z.id);svg.appendChild(zr);
-    const zt=mkSVG('text',{x:z.svgX+7,y:z.svgY+14,fill:hex,class:'rm-lbl'});zt.textContent=z.emoji+' '+z.name;svg.appendChild(zt);
-    const zc=mkSVG('text',{x:z.svgX+z.svgW-5,y:z.svgY+14,fill:hex,class:'rm-sub','text-anchor':'end'});zc.textContent=cnt+' art.';svg.appendChild(zc);
-    D.locs.filter(l=>l.zoneId===z.id).forEach(loc=>{
-      if(loc.svgX==null)return;
-      const isTgt=blinkLoc===loc.id;
-      const lr=mkSVG('rect',{x:loc.svgX,y:loc.svgY,width:loc.svgW,height:loc.svgH,fill:isTgt?'#f87171':hex,rx:'3',stroke:isTgt?'#f87171':hex,'stroke-width':'1','stroke-opacity':'.6',class:'loc-r'+(isTgt?' loc-found':'')});
-      lr.onclick=e=>{e.stopPropagation();openLocDetail(loc.id);};svg.appendChild(lr);
-      const lt=mkSVG('text',{x:loc.svgX+loc.svgW/2,y:loc.svgY+loc.svgH/2,class:'loc-t'});
-      lt.textContent=(loc.name.split(' ').slice(0,2).join(' ')).slice(0,9);svg.appendChild(lt);
-      const ic=D.items.filter(i=>i.locationId===loc.id).length;
-      if(ic>0){const lc=mkSVG('text',{x:loc.svgX+loc.svgW-2,y:loc.svgY+8,fill:hex,class:'loc-c'});lc.textContent=ic;svg.appendChild(lc);}
+  // ── Filter bar ──
+  const fil = document.getElementById('map-filters');
+  if(fil){
+    fil.innerHTML='';
+    // "All" pill
+    const allBtn = document.createElement('button');
+    allBtn.className='map-filter-btn'+(mapFilter===null?' active':'');
+    allBtn.style.color='var(--t2)';
+    allBtn.innerHTML=`<span class="mfb-dot" style="background:var(--t3)"></span>TOUTES <span class="map-filter-cnt">${D.zones.length}</span>`;
+    allBtn.onclick=()=>{mapFilter=null;renderMap();};
+    fil.appendChild(allBtn);
+    D.zones.forEach(z=>{
+      const cnt=D.items.filter(i=>D.locs.some(l=>l.id===i.locationId&&l.zoneId===z.id)).length;
+      const hex=zHex(z.color);
+      const btn=document.createElement('button');
+      btn.className='map-filter-btn'+(mapFilter===z.id?' active':'');
+      btn.style.color=hex;
+      btn.innerHTML=`${z.emoji} ${esc(z.name)} <span class="map-filter-cnt">${cnt}</span>`;
+      btn.onclick=()=>{mapFilter=mapFilter===z.id?null:z.id;renderMap();};
+      fil.appendChild(btn);
     });
+  }
+
+  // ── Room cards ──
+  const grid = document.getElementById('map-rooms-grid');
+  if(!grid) return;
+  const zones = mapFilter ? D.zones.filter(z=>z.id===mapFilter) : D.zones;
+
+  if(!zones.length){
+    grid.innerHTML=`<div class="empty-st"><div class="ei">🏠</div><div class="et">AUCUNE PIÈCE — clique "+ Pièce" ci-dessus</div></div>`;
+    return;
+  }
+  grid.innerHTML='';
+
+  zones.forEach(z=>{
+    const hex  = zHex(z.color);
+    const locs = D.locs.filter(l=>l.zoneId===z.id);
+    const allItems = D.items.filter(i=>locs.some(l=>l.id===i.locationId));
+    const card = document.createElement('div');
+    card.className='map-room-card';
+    card.style.borderLeftColor=hex;
+
+    // Header
+    const hdr = document.createElement('div');
+    hdr.className='map-room-header';
+    hdr.innerHTML=`
+      <span class="map-room-em">${z.emoji}</span>
+      <div class="map-room-info">
+        <div class="map-room-name" style="color:${hex}">${esc(z.name)}</div>
+        <div class="map-room-meta">${locs.length} emplacement${locs.length>1?'s':''} · ${allItems.length} article${allItems.length>1?'s':''}</div>
+      </div>
+      <div class="map-room-count" style="color:${hex}66">${allItems.length}</div>
+      <span class="map-room-expand" style="color:${hex}88">▾</span>`;
+    hdr.onclick=()=>{card.classList.toggle('exp'); renderLocGrid(card,z,locs,hex,allItems);};
+    card.appendChild(hdr);
+
+    // Location container (lazy rendered on expand)
+    const locWrap = document.createElement('div');
+    locWrap.className='map-loc-container';
+    locWrap.style.display='none';
+    card.appendChild(locWrap);
+
+    // Auto-expand if this zone has a blink target
+    if(blinkLoc && locs.some(l=>l.id===blinkLoc)){
+      card.classList.add('exp');
+      renderLocGrid(card,z,locs,hex,allItems);
+      locWrap.style.display='block';
+      // scroll to card after render
+      setTimeout(()=>card.scrollIntoView({behavior:'smooth',block:'center'}),100);
+    }
+
+    grid.appendChild(card);
   });
 }
+
+let mapFilter = null;
+
+function renderLocGrid(card, z, locs, hex, allItems){
+  const wrap = card.querySelector('.map-loc-container');
+  if(!wrap) return;
+  const isExp = card.classList.contains('exp');
+  wrap.style.display = isExp ? 'block' : 'none';
+  if(!isExp || wrap.dataset.rendered) return;
+  wrap.dataset.rendered='1';
+
+  if(!locs.length){
+    wrap.innerHTML=`
+      <div class="map-room-empty">📭 Aucun emplacement dans cette pièce</div>
+      <div style="padding:0 12px 12px">
+        <button class="map-add-loc" onclick="openAddLoc('${z.id}')">＋ Ajouter un emplacement</button>
+      </div>`;
+    return;
+  }
+
+  const tileGrid = document.createElement('div');
+  tileGrid.className='map-locs-grid';
+
+  locs.forEach(loc=>{
+    const locItems = D.items.filter(i=>i.locationId===loc.id);
+    const isTgt    = blinkLoc===loc.id;
+    const tile = document.createElement('div');
+    tile.className='map-loc-tile'+(isTgt?' found':'');
+    tile.style.cssText=`background:${hex}10;border-color:${isTgt?'var(--err)':hex+'25'};color:${hex}`;
+    // Preview emojis of items (max 4)
+    const emojiPreview = locItems.slice(0,4).map(i=>{
+      const m=CATS[i.category]||CATS.other;
+      return`<span class="map-loc-item-chip" title="${esc(i.name)}">${m.e}</span>`;
+    }).join('');
+    tile.innerHTML=`
+      ${loc.nfcTagId?`<div class="map-loc-nfc y">⬡ NFC</div>`:''}
+      <div class="map-loc-tile-top">
+        <span class="map-loc-tile-em">${loc.emoji}</span>
+        <span class="map-loc-tile-cnt" style="color:${isTgt?'var(--err)':hex}">${locItems.length}</span>
+      </div>
+      <div class="map-loc-tile-name">${esc(loc.name)}</div>
+      ${locItems.length?`<div class="map-loc-tile-items">${emojiPreview}${locItems.length>4?`<span style="font-family:var(--f-m);font-size:8px;color:var(--t3)">+${locItems.length-4}</span>`:''}</div>`:'<div style="font-family:var(--f-m);font-size:8px;color:var(--t3);margin-top:2px">Vide</div>'}`;
+    tile.onclick=()=>openLocDetail(loc.id);
+    tileGrid.appendChild(tile);
+  });
+
+  // Add "+" tile
+  const addTile = document.createElement('button');
+  addTile.className='map-add-loc';
+  addTile.innerHTML='＋ Emplacement';
+  addTile.onclick=()=>openAddLoc(z.id);
+  tileGrid.appendChild(addTile);
+
+  wrap.appendChild(tileGrid);
+}
+
 function mkSVG(t,a){const el=document.createElementNS('http://www.w3.org/2000/svg',t);Object.entries(a).forEach(([k,v])=>el.setAttribute(k,v));return el;}
 
 function openLocDetail(lid){
