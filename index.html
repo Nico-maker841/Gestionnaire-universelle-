@@ -1920,51 +1920,51 @@ const API_KEY_SK = 'ss-anthropic-key';
 function getApiKey(){ return localStorage.getItem(API_KEY_SK)||''; }
 function hasApiKey(){ return !!getApiKey(); }
 
-const WORKER_SCRIPT = `// Smart-Storage NFC — Cloudflare Worker Proxy
-// Déploie ce script sur workers.cloudflare.com (gratuit)
-
-addEventListener('fetch', event => {
-  event.respondWith(handleRequest(event.request))
-})
-
-async function handleRequest(req) {
-  // Handle CORS preflight
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders() })
-  }
-  try {
-    const body = await req.json()
-    const apiKey = body._apiKey
-    if (!apiKey) return new Response(JSON.stringify({error:'No key'}),{status:400,headers:corsHeaders()})
-    // Remove the key from the body before forwarding
-    const { _apiKey, ...anthropicBody } = body
-    const resp = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify(anthropicBody),
-    })
-    const data = await resp.json()
-    return new Response(JSON.stringify(data), {
-      status: resp.status,
-      headers: corsHeaders(),
-    })
-  } catch(e) {
-    return new Response(JSON.stringify({error:e.message}),{status:500,headers:corsHeaders()})
-  }
-}
-
-function corsHeaders() {
-  return {
-    'Content-Type': 'application/json',
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Methods': 'POST, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type',
-  }
-}`;
+const WORKER_SCRIPT = [
+"// Smart-Storage NFC — Cloudflare Worker Proxy",
+"// Deploie ce script sur workers.cloudflare.com (gratuit)",
+"",
+"addEventListener('fetch', event => {",
+"  event.respondWith(handleRequest(event.request))",
+"})",
+"",
+"async function handleRequest(req) {",
+"  if (req.method === 'OPTIONS') {",
+"    return new Response(null, { headers: corsHeaders() })",
+"  }",
+"  try {",
+"    const body = await req.json()",
+"    const apiKey = body._apiKey",
+"    if (!apiKey) return new Response(JSON.stringify({error:'No key'}),{status:400,headers:corsHeaders()})",
+"    const { _apiKey, ...anthropicBody } = body",
+"    const resp = await fetch('https://api.anthropic.com/v1/messages', {",
+"      method: 'POST',",
+"      headers: {",
+"        'Content-Type': 'application/json',",
+"        'x-api-key': apiKey,",
+"        'anthropic-version': '2023-06-01',",
+"      },",
+"      body: JSON.stringify(anthropicBody),",
+"    })",
+"    const data = await resp.json()",
+"    return new Response(JSON.stringify(data), {",
+"      status: resp.status,",
+"      headers: corsHeaders(),",
+"    })",
+"  } catch(e) {",
+"    return new Response(JSON.stringify({error:e.message}),{status:500,headers:corsHeaders()})",
+"  }",
+"}",
+"",
+"function corsHeaders() {",
+"  return {",
+"    'Content-Type': 'application/json',",
+"    'Access-Control-Allow-Origin': '*',",
+"    'Access-Control-Allow-Methods': 'POST, OPTIONS',",
+"    'Access-Control-Allow-Headers': 'Content-Type',",
+"  }",
+"}"
+].join("\n");
 
 function openApiKeySheet(){
   const key       = getApiKey();
@@ -2047,8 +2047,6 @@ function openApiKeySheet(){
     </button>
     <div id="test-result" style="margin-top:10px"></div>`:''}`;
 
-  sov('ov-apikey');
-}
   sov('ov-apikey');
 }
 
