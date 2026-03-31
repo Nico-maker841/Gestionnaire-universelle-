@@ -3,6 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Smart-Storage">
+<meta name="theme-color" content="#04060f">
 <title>Smart-Storage · NFC</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
@@ -312,115 +317,129 @@ textarea.fi{resize:vertical;min-height:68px}
 /* ═══════════════════════════ MAP TAB ═══════════════════════════ */
 #tab-map{padding:0}
 .map-header{
-  padding:12px 14px 8px;
-  display:flex;align-items:center;gap:8px;flex-wrap:wrap;
-  background:rgba(4,6,15,.85);
+  padding:10px 12px 8px;
+  display:flex;align-items:center;gap:8px;
+  background:rgba(4,6,15,.9);
   -webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);
   border-bottom:1px solid var(--b1);
   position:sticky;top:52px;z-index:50;
 }
-.map-filter-btn{
-  display:flex;align-items:center;gap:5px;
-  padding:5px 11px;border-radius:20px;
-  background:none;border:1px solid var(--b1);
-  color:var(--t3);font-family:var(--f-m);font-size:8.5px;
-  cursor:pointer;transition:all .15s;white-space:nowrap;
+.map-view-toggle{
+  display:flex;background:var(--s2);border:1px solid var(--b1);border-radius:20px;
+  padding:2px;gap:2px;flex-shrink:0;
 }
-.map-filter-btn.active{border-color:currentColor;background:color-mix(in srgb,currentColor 10%,transparent)}
-.map-filter-btn .mfb-dot{width:7px;height:7px;border-radius:2px;background:currentColor;flex-shrink:0}
-.map-filter-cnt{font-size:8px;opacity:.6;margin-left:2px}
+.mvt{
+  padding:5px 12px;border-radius:16px;font-family:var(--f-m);font-size:9px;
+  cursor:pointer;background:none;border:none;color:var(--t3);transition:all .15s;
+}
+.mvt.on{background:var(--s1);color:var(--t1);box-shadow:0 1px 4px #000a}
 
-/* Room cards grid */
-.map-rooms-grid{
-  padding:12px;
-  display:flex;flex-direction:column;gap:10px;
+/* ── FLOOR PLAN ── */
+#floor-plan-wrap{
+  padding:12px;overflow-x:auto;
 }
+.floor-plan{
+  display:grid;
+  min-width:320px;
+  gap:0;
+  background:var(--b1);
+  border:2px solid var(--b1);
+  border-radius:var(--r);
+  overflow:hidden;
+}
+.fp-room{
+  padding:10px;cursor:pointer;
+  position:relative;overflow:hidden;
+  min-height:120px;
+  transition:filter .15s;display:flex;flex-direction:column;gap:6px;
+  border:1px solid var(--b1);
+}
+.fp-room:hover{filter:brightness(1.15)}
+.fp-room-top{display:flex;align-items:flex-start;justify-content:space-between}
+.fp-room-name{font-family:var(--f-d);font-size:18px;letter-spacing:.5px;line-height:1}
+.fp-room-cnt{
+  font-family:var(--f-d);font-size:26px;line-height:1;opacity:.7;flex-shrink:0;
+}
+.fp-locs{display:flex;flex-wrap:wrap;gap:4px;margin-top:auto}
+.fp-loc{
+  padding:3px 8px;border-radius:6px;border:1px solid;
+  font-family:var(--f-m);font-size:8px;display:flex;align-items:center;gap:4px;
+  cursor:pointer;transition:all .15s;
+}
+.fp-loc:hover{filter:brightness(1.3)}
+.fp-loc.found{animation:locGlow .7s ease-in-out infinite}
+.fp-loc-em{font-size:12px}
+.fp-loc-cnt{font-family:var(--f-d);font-size:14px}
+
+/* ── CARD LIST ── */
+.map-rooms-grid{padding:10px;display:flex;flex-direction:column;gap:8px}
 .map-room-card{
   border-radius:var(--r);overflow:hidden;
   border:1px solid var(--b1);border-left:4px solid;
-  background:var(--s1);
-  transition:all .15s;
+  background:var(--s1);transition:all .15s;
 }
 .map-room-header{
   display:flex;align-items:center;gap:10px;
-  padding:12px 14px 10px;
-  cursor:pointer;user-select:none;
+  padding:12px 14px;cursor:pointer;user-select:none;
 }
 .map-room-em{font-size:22px;flex-shrink:0}
 .map-room-info{flex:1}
 .map-room-name{font-family:var(--f-d);font-size:20px;letter-spacing:1px;line-height:1}
 .map-room-meta{font-family:var(--f-m);font-size:9px;color:var(--t3);margin-top:3px}
-.map-room-count{
-  font-family:var(--f-d);font-size:32px;line-height:1;flex-shrink:0;
-}
-.map-room-expand{
-  font-size:12px;color:var(--t3);flex-shrink:0;
-  transition:transform .2s;
-}
+.map-room-count{font-family:var(--f-d);font-size:32px;line-height:1;flex-shrink:0}
+.map-room-expand{font-size:12px;color:var(--t3);flex-shrink:0;transition:transform .2s}
 .map-room-card.exp .map-room-expand{transform:rotate(180deg)}
-
-/* Location grid inside room */
 .map-locs-grid{
   display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));
-  gap:8px;padding:0 12px 12px;
-  border-top:1px solid var(--b1);
+  gap:8px;padding:0 12px 12px;border-top:1px solid var(--b1);
 }
 .map-loc-tile{
-  border-radius:10px;padding:11px 10px;
-  cursor:pointer;display:flex;flex-direction:column;gap:6px;
+  border-radius:10px;padding:11px 10px;cursor:pointer;
+  display:flex;flex-direction:column;gap:6px;
   transition:all .15s;border:1px solid;
   position:relative;overflow:hidden;
 }
 .map-loc-tile:active{transform:scale(.96)}
 .map-loc-tile-top{display:flex;align-items:center;justify-content:space-between}
 .map-loc-tile-em{font-size:20px}
-.map-loc-tile-cnt{
-  font-family:var(--f-d);font-size:28px;line-height:1;
-}
-.map-loc-tile-name{
-  font-weight:700;font-size:12px;color:#fff;line-height:1.25;
-}
-.map-loc-tile-items{
-  display:flex;flex-wrap:wrap;gap:3px;margin-top:2px;
-}
-.map-loc-item-chip{
-  font-size:14px;line-height:1;
-}
+.map-loc-tile-cnt{font-family:var(--f-d);font-size:28px;line-height:1}
+.map-loc-tile-name{font-weight:700;font-size:12px;color:#fff;line-height:1.25}
+.map-loc-tile-items{display:flex;flex-wrap:wrap;gap:3px;margin-top:2px}
+.map-loc-item-chip{font-size:14px;line-height:1}
 .map-loc-nfc{
   font-family:var(--f-m);font-size:7px;
   padding:2px 5px;border-radius:3px;
   position:absolute;top:7px;right:7px;
 }
 .map-loc-nfc.y{color:var(--nfc);background:#22d3ee12;border:1px solid #22d3ee25}
-/* Blink animation for found location */
 @keyframes locGlow{
-  0%,100%{box-shadow:none;border-color:currentColor}
-  50%{box-shadow:0 0 16px var(--err),0 0 32px var(--err)44;border-color:var(--err)}
+  0%,100%{box-shadow:none}
+  50%{box-shadow:0 0 16px var(--err),0 0 32px var(--err)44}
 }
-.map-loc-tile.found{
-  animation:locGlow .7s ease-in-out infinite;
-  border-color:var(--err)!important;
-}
-/* Empty room */
+.map-loc-tile.found,.fp-loc.found{animation:locGlow .7s ease-in-out infinite;border-color:var(--err)!important}
 .map-room-empty{
   display:flex;align-items:center;justify-content:center;
-  padding:16px;font-family:var(--f-m);font-size:9px;color:var(--t3);
+  padding:14px;font-family:var(--f-m);font-size:9px;color:var(--t3);
   border-top:1px solid var(--b1);gap:6px;
 }
-/* Add loc button in room */
 .map-add-loc{
   display:flex;align-items:center;justify-content:center;gap:6px;
-  padding:11px;border-radius:10px;
-  border:1px dashed var(--b2);background:none;
-  color:var(--t3);font-family:var(--f-m);font-size:9px;
-  cursor:pointer;transition:all .15s;
+  padding:11px;border-radius:10px;border:1px dashed var(--b2);background:none;
+  color:var(--t3);font-family:var(--f-m);font-size:9px;cursor:pointer;transition:all .15s;
 }
 .map-add-loc:hover{border-color:var(--nfc);color:var(--nfc)}
-/* SVG kept for compatibility but map tab now uses cards */
-#map-wrap{display:none}
-#plan{display:none}
-.map-leg{display:none}
 
+/* SVG hidden */
+#map-wrap{display:none}#plan{display:none}.map-leg{display:none}
+
+/* ── NOTIF PERMISSION BANNER ── */
+.notif-banner{
+  background:linear-gradient(135deg,#5b9eff10,#c084fc08);
+  border:1px solid var(--b1);border-radius:var(--r);
+  padding:13px;display:flex;align-items:flex-start;gap:10px;
+  cursor:pointer;transition:all .15s;
+}
+.notif-banner:hover{border-color:var(--b2)}
 
 /* ═══════════════════════════ NFC TAB ═══════════════════════════ */
 #tab-nfc{padding:14px;display:flex;flex-direction:column;gap:10px}
@@ -817,11 +836,18 @@ textarea.fi{resize:vertical;min-height:68px}
   <!-- MAP -->
   <div class="tab" id="tab-map">
     <div class="map-header">
-      <div style="display:flex;gap:6px;overflow-x:auto;-ms-overflow-style:none;scrollbar-width:none;flex:1;padding-bottom:2px" id="map-filters"></div>
-      <button onclick="openAddZone()" style="background:none;border:1px solid var(--b1);color:var(--t3);font-family:var(--f-m);font-size:9px;padding:5px 11px;border-radius:20px;cursor:pointer;flex-shrink:0;transition:all .15s">＋ Pièce</button>
+      <div class="map-view-toggle">
+        <button class="mvt on" id="mvt-plan" onclick="setMapView('plan')">🗺️ PLAN</button>
+        <button class="mvt" id="mvt-list" onclick="setMapView('list')">📋 LISTE</button>
+      </div>
+      <div style="flex:1"></div>
+      <button onclick="openAddZone()" style="background:none;border:1px solid var(--b1);color:var(--t3);font-family:var(--f-m);font-size:9px;padding:5px 11px;border-radius:20px;cursor:pointer;flex-shrink:0;transition:color .15s">＋ Pièce</button>
     </div>
-    <div class="map-rooms-grid" id="map-rooms-grid"></div>
-    <!-- Legacy SVG hidden -->
+    <!-- FLOOR PLAN VIEW -->
+    <div id="floor-plan-wrap" style="display:block"></div>
+    <!-- LIST VIEW -->
+    <div class="map-rooms-grid" id="map-rooms-grid" style="display:none"></div>
+    <!-- Legacy hidden -->
     <div id="map-leg" style="display:none"></div>
     <div id="map-wrap" style="display:none"><svg id="plan" viewBox="0 0 340 270" xmlns="http://www.w3.org/2000/svg"></svg></div>
   </div>
@@ -876,6 +902,7 @@ textarea.fi{resize:vertical;min-height:68px}
         </div>
       </div>
       <div style="background:var(--s1);border:1px solid var(--b1);border-radius:var(--rs);padding:13px;font-family:var(--f-m);font-size:9.5px;line-height:1.7;color:var(--t2)" id="nfc-compat"></div>
+      <div id="notif-banner-slot"></div>
       <div id="apikey-banner-nfc" onclick="openApiKeySheet()" style="margin-top:2px"></div>
     </div>
   </div>
@@ -1241,135 +1268,132 @@ function saveItem(id,mode){
 function deleteItem(id){const item=gI(id);D.items=D.items.filter(i=>i.id!==id);saveD();renderAll();cov('ov-view');cov('ov-form');toast('🗑 «'+(item?.name||'?')+'» supprimé','warn');}
 
 /* ══════════════ SVG MAP ══════════════ */
+let mapFilter=null, mapView='plan';
+
+function setMapView(v){
+  mapView=v;
+  document.getElementById('mvt-plan').classList.toggle('on',v==='plan');
+  document.getElementById('mvt-list').classList.toggle('on',v==='list');
+  document.getElementById('floor-plan-wrap').style.display=v==='plan'?'block':'none';
+  document.getElementById('map-rooms-grid').style.display=v==='list'?'flex':'none';
+  renderMap();
+}
+
 function renderMap(){
-  // ── Filter bar ──
-  const fil = document.getElementById('map-filters');
-  if(fil){
-    fil.innerHTML='';
-    // "All" pill
-    const allBtn = document.createElement('button');
-    allBtn.className='map-filter-btn'+(mapFilter===null?' active':'');
-    allBtn.style.color='var(--t2)';
-    allBtn.innerHTML=`<span class="mfb-dot" style="background:var(--t3)"></span>TOUTES <span class="map-filter-cnt">${D.zones.length}</span>`;
-    allBtn.onclick=()=>{mapFilter=null;renderMap();};
-    fil.appendChild(allBtn);
-    D.zones.forEach(z=>{
-      const cnt=D.items.filter(i=>D.locs.some(l=>l.id===i.locationId&&l.zoneId===z.id)).length;
-      const hex=zHex(z.color);
-      const btn=document.createElement('button');
-      btn.className='map-filter-btn'+(mapFilter===z.id?' active':'');
-      btn.style.color=hex;
-      btn.innerHTML=`${z.emoji} ${esc(z.name)} <span class="map-filter-cnt">${cnt}</span>`;
-      btn.onclick=()=>{mapFilter=mapFilter===z.id?null:z.id;renderMap();};
-      fil.appendChild(btn);
-    });
-  }
+  if(mapView==='plan') renderFloorPlan();
+  else renderMapList();
+}
 
-  // ── Room cards ──
-  const grid = document.getElementById('map-rooms-grid');
-  if(!grid) return;
-  const zones = mapFilter ? D.zones.filter(z=>z.id===mapFilter) : D.zones;
-
-  if(!zones.length){
-    grid.innerHTML=`<div class="empty-st"><div class="ei">🏠</div><div class="et">AUCUNE PIÈCE — clique "+ Pièce" ci-dessus</div></div>`;
+/* ── FLOOR PLAN ── */
+function renderFloorPlan(){
+  const wrap=document.getElementById('floor-plan-wrap');
+  if(!wrap)return;
+  if(!D.zones.length){
+    wrap.innerHTML=`<div class="empty-st"><div class="ei">🏠</div><div class="et">AUCUNE PIÈCE — clique "+ Pièce"</div></div>`;
     return;
   }
-  grid.innerHTML='';
-
-  zones.forEach(z=>{
-    const hex  = zHex(z.color);
-    const locs = D.locs.filter(l=>l.zoneId===z.id);
-    const allItems = D.items.filter(i=>locs.some(l=>l.id===i.locationId));
-    const card = document.createElement('div');
-    card.className='map-room-card';
-    card.style.borderLeftColor=hex;
-
-    // Header
-    const hdr = document.createElement('div');
-    hdr.className='map-room-header';
-    hdr.innerHTML=`
-      <span class="map-room-em">${z.emoji}</span>
-      <div class="map-room-info">
-        <div class="map-room-name" style="color:${hex}">${esc(z.name)}</div>
-        <div class="map-room-meta">${locs.length} emplacement${locs.length>1?'s':''} · ${allItems.length} article${allItems.length>1?'s':''}</div>
-      </div>
-      <div class="map-room-count" style="color:${hex}66">${allItems.length}</div>
-      <span class="map-room-expand" style="color:${hex}88">▾</span>`;
-    hdr.onclick=()=>{card.classList.toggle('exp'); renderLocGrid(card,z,locs,hex,allItems);};
-    card.appendChild(hdr);
-
-    // Location container (lazy rendered on expand)
-    const locWrap = document.createElement('div');
-    locWrap.className='map-loc-container';
-    locWrap.style.display='none';
-    card.appendChild(locWrap);
-
-    // Auto-expand if this zone has a blink target
-    if(blinkLoc && locs.some(l=>l.id===blinkLoc)){
-      card.classList.add('exp');
-      renderLocGrid(card,z,locs,hex,allItems);
-      locWrap.style.display='block';
-      // scroll to card after render
-      setTimeout(()=>card.scrollIntoView({behavior:'smooth',block:'center'}),100);
+  // Build a responsive CSS grid floor plan
+  const cols = D.zones.length<=2?D.zones.length:2;
+  const rows = Math.ceil(D.zones.length/cols);
+  // Determine grid areas from zone order
+  let gridAreas='';
+  for(let r=0;r<rows;r++){
+    let row='"';
+    for(let c=0;c<cols;c++){
+      const idx=r*cols+c;
+      row+=(idx<D.zones.length?'z'+idx:'.')+' ';
     }
+    gridAreas+=row.trim()+'" ';
+  }
+  const liveFoundZone = blinkLoc ? D.locs.find(l=>l.id===blinkLoc)?.zoneId : null;
 
+  wrap.innerHTML=`
+    <div style="padding:12px 12px 6px;font-family:var(--f-m);font-size:8px;color:var(--t3);letter-spacing:1.5px">
+      PLAN DE LA MAISON · Appuie sur une pièce ou un emplacement
+    </div>
+    <div id="fp-grid" style="margin:0 12px 12px;display:grid;grid-template-columns:repeat(${cols},1fr);gap:2px;background:var(--b1);border:2px solid var(--b1);border-radius:var(--r);overflow:hidden;grid-template-areas:${gridAreas}">
+      ${D.zones.map((z,i)=>{
+        const hex=zHex(z.color);
+        const locs=D.locs.filter(l=>l.zoneId===z.id);
+        const cnt=D.items.filter(i2=>locs.some(l=>l.id===i2.locationId)).length;
+        const isFoundZone=liveFoundZone===z.id;
+        const locsHtml=locs.map(loc=>{
+          const isTgt=blinkLoc===loc.id;
+          const lCnt=D.items.filter(i2=>i2.locationId===loc.id).length;
+          return`<div class="fp-loc${isTgt?' found':''}" 
+            style="color:${isTgt?'var(--err)':hex};border-color:${isTgt?'var(--err)':hex+'40'};background:${isTgt?'#f871711a':hex+'15'}"
+            onclick="event.stopPropagation();openLocDetail('${loc.id}')">
+            <span class="fp-loc-em">${loc.emoji}</span>
+            <span style="font-family:var(--f-m);font-size:8px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(loc.name)}</span>
+            <span class="fp-loc-cnt">${lCnt}</span>
+          </div>`;
+        }).join('');
+        return`<div class="fp-room" style="grid-area:z${i};background:${hex}${isFoundZone?'18':'0c'};${isFoundZone?'box-shadow:inset 0 0 0 2px '+hex+';':''}"
+          onclick="openRoomDetail('${z.id}')">
+          <div class="fp-room-top">
+            <div>
+              <div style="font-size:18px;line-height:1">${z.emoji}</div>
+              <div class="fp-room-name" style="color:${hex}">${esc(z.name)}</div>
+            </div>
+            <div class="fp-room-cnt" style="color:${hex}88">${cnt}</div>
+          </div>
+          <div class="fp-locs">${locsHtml||'<span style="font-family:var(--f-m);font-size:8px;color:var(--t3)">Vide</span>'}</div>
+        </div>`;
+      }).join('')}
+    </div>
+    <div style="padding:0 12px 12px;font-family:var(--f-m);font-size:8.5px;color:var(--t3);line-height:1.6">
+      💡 Clique sur un emplacement pour voir les articles. 
+      ${blinkLoc?`<span style="color:var(--err)">⬤ Emplacement localisé actif</span>`:'Depuis une fiche article → "Localiser" fait clignoter.'}
+    </div>`;
+
+  // Auto-scroll to found zone
+  if(liveFoundZone){
+    setTimeout(()=>{
+      const el=document.querySelector('.fp-room');
+      if(el)el.scrollIntoView({behavior:'smooth',block:'center'});
+    },100);
+  }
+}
+
+/* ── LIST VIEW ── */
+function renderMapList(){
+  const grid=document.getElementById('map-rooms-grid');if(!grid)return;
+  const zones=D.zones;
+  if(!zones.length){grid.innerHTML=`<div class="empty-st"><div class="ei">🏠</div><div class="et">AUCUNE PIÈCE</div></div>`;return;}
+  grid.innerHTML='';
+  zones.forEach(z=>{
+    const hex=zHex(z.color);
+    const locs=D.locs.filter(l=>l.zoneId===z.id);
+    const allItems=D.items.filter(i=>locs.some(l=>l.id===i.locationId));
+    const card=document.createElement('div');
+    card.className='map-room-card';card.style.borderLeftColor=hex;
+    const hdr=document.createElement('div');hdr.className='map-room-header';
+    hdr.innerHTML=`<span class="map-room-em">${z.emoji}</span><div class="map-room-info"><div class="map-room-name" style="color:${hex}">${esc(z.name)}</div><div class="map-room-meta">${locs.length} empl. · ${allItems.length} articles</div></div><div class="map-room-count" style="color:${hex}66">${allItems.length}</div><span class="map-room-expand" style="color:${hex}88">▾</span>`;
+    const locWrap=document.createElement('div');locWrap.style.display='none';
+    hdr.onclick=()=>{card.classList.toggle('exp');const isExp=card.classList.contains('exp');locWrap.style.display=isExp?'block':'none';if(isExp&&!locWrap.dataset.rendered){renderLocGrid(locWrap,z,locs,hex);locWrap.dataset.rendered='1';}};
+    card.appendChild(hdr);card.appendChild(locWrap);
+    // Auto-expand if found
+    if(blinkLoc&&locs.some(l=>l.id===blinkLoc)){card.classList.add('exp');locWrap.style.display='block';renderLocGrid(locWrap,z,locs,hex);locWrap.dataset.rendered='1';setTimeout(()=>card.scrollIntoView({behavior:'smooth',block:'center'}),100);}
     grid.appendChild(card);
   });
 }
 
-let mapFilter = null;
-
-function renderLocGrid(card, z, locs, hex, allItems){
-  const wrap = card.querySelector('.map-loc-container');
-  if(!wrap) return;
-  const isExp = card.classList.contains('exp');
-  wrap.style.display = isExp ? 'block' : 'none';
-  if(!isExp || wrap.dataset.rendered) return;
-  wrap.dataset.rendered='1';
-
-  if(!locs.length){
-    wrap.innerHTML=`
-      <div class="map-room-empty">📭 Aucun emplacement dans cette pièce</div>
-      <div style="padding:0 12px 12px">
-        <button class="map-add-loc" onclick="openAddLoc('${z.id}')">＋ Ajouter un emplacement</button>
-      </div>`;
-    return;
-  }
-
-  const tileGrid = document.createElement('div');
-  tileGrid.className='map-locs-grid';
-
+function renderLocGrid(wrap,z,locs,hex){
+  if(!locs.length){wrap.innerHTML=`<div class="map-room-empty">📭 Vide<br><button class="map-add-loc" style="margin:8px auto" onclick="openAddLoc('${z.id}')">＋ Emplacement</button></div>`;return;}
+  const tg=document.createElement('div');tg.className='map-locs-grid';
   locs.forEach(loc=>{
-    const locItems = D.items.filter(i=>i.locationId===loc.id);
-    const isTgt    = blinkLoc===loc.id;
-    const tile = document.createElement('div');
-    tile.className='map-loc-tile'+(isTgt?' found':'');
+    const locItems=D.items.filter(i=>i.locationId===loc.id);
+    const isTgt=blinkLoc===loc.id;
+    const tile=document.createElement('div');tile.className='map-loc-tile'+(isTgt?' found':'');
     tile.style.cssText=`background:${hex}10;border-color:${isTgt?'var(--err)':hex+'25'};color:${hex}`;
-    // Preview emojis of items (max 4)
-    const emojiPreview = locItems.slice(0,4).map(i=>{
-      const m=CATS[i.category]||CATS.other;
-      return`<span class="map-loc-item-chip" title="${esc(i.name)}">${m.e}</span>`;
-    }).join('');
-    tile.innerHTML=`
-      ${loc.nfcTagId?`<div class="map-loc-nfc y">⬡ NFC</div>`:''}
-      <div class="map-loc-tile-top">
-        <span class="map-loc-tile-em">${loc.emoji}</span>
-        <span class="map-loc-tile-cnt" style="color:${isTgt?'var(--err)':hex}">${locItems.length}</span>
-      </div>
+    tile.innerHTML=`${loc.nfcTagId?`<div class="map-loc-nfc y">⬡</div>`:''}
+      <div class="map-loc-tile-top"><span class="map-loc-tile-em">${loc.emoji}</span><span class="map-loc-tile-cnt" style="color:${isTgt?'var(--err)':hex}">${locItems.length}</span></div>
       <div class="map-loc-tile-name">${esc(loc.name)}</div>
-      ${locItems.length?`<div class="map-loc-tile-items">${emojiPreview}${locItems.length>4?`<span style="font-family:var(--f-m);font-size:8px;color:var(--t3)">+${locItems.length-4}</span>`:''}</div>`:'<div style="font-family:var(--f-m);font-size:8px;color:var(--t3);margin-top:2px">Vide</div>'}`;
-    tile.onclick=()=>openLocDetail(loc.id);
-    tileGrid.appendChild(tile);
+      <div class="map-loc-tile-items">${locItems.slice(0,4).map(i=>`<span class="map-loc-item-chip">${(CATS[i.category]||CATS.other).e}</span>`).join('')}${locItems.length>4?`<span style="font-family:var(--f-m);font-size:8px;color:var(--t3)">+${locItems.length-4}</span>`:''}</div>`;
+    tile.onclick=()=>openLocDetail(loc.id);tg.appendChild(tile);
   });
-
-  // Add "+" tile
-  const addTile = document.createElement('button');
-  addTile.className='map-add-loc';
-  addTile.innerHTML='＋ Emplacement';
-  addTile.onclick=()=>openAddLoc(z.id);
-  tileGrid.appendChild(addTile);
-
-  wrap.appendChild(tileGrid);
+  const addBtn=document.createElement('button');addBtn.className='map-add-loc';addBtn.textContent='＋ Emplacement';addBtn.onclick=()=>openAddLoc(z.id);tg.appendChild(addBtn);
+  wrap.appendChild(tg);
 }
 
 function mkSVG(t,a){const el=document.createElementNS('http://www.w3.org/2000/svg',t);Object.entries(a).forEach(([k,v])=>el.setAttribute(k,v));return el;}
@@ -2299,6 +2323,7 @@ function showWriteMenu(){
 function renderNfcTab(){
   updateNfcUI();
   renderApiKeyBanner();
+  renderNotifBanner();
   const el=document.getElementById('nfc-compat');
   el.innerHTML=NFC_OK()
     ?'<span style="color:var(--ok)">✅ NFC disponible</span> — Scan continu actif sur cet appareil.'
@@ -2569,12 +2594,211 @@ function renderApiKeyBanner(){
     </div>`;
 }
 
+/* ══════════════════════════════════════════════════════
+   🔔 NOTIFICATIONS + WAKE LOCK + PWA
+══════════════════════════════════════════════════════ */
+let wakeLock = null;
+
+// ── Wake Lock (keep screen on while NFC scanning) ──
+async function acquireWakeLock(){
+  if(!('wakeLock' in navigator))return;
+  try{
+    wakeLock = await navigator.wakeLock.request('screen');
+    wakeLock.addEventListener('release',()=>{wakeLock=null;});
+  }catch(e){}
+}
+function releaseWakeLock(){
+  wakeLock?.release().catch(()=>{});
+  wakeLock=null;
+}
+// Re-acquire on page visibility (Android locks screen → release)
+document.addEventListener('visibilitychange',async()=>{
+  if(document.visibilityState==='visible' && liveActive && !wakeLock){
+    await acquireWakeLock();
+  }
+});
+
+// ── Notification permission ──
+async function askNotifPerm(){
+  if(!('Notification' in window))return false;
+  if(Notification.permission==='granted')return true;
+  const p = await Notification.requestPermission();
+  return p==='granted';
+}
+
+// ── Show rich notification via Service Worker ──
+async function showTagNotif(type, data){
+  if(!('serviceWorker' in navigator))return;
+  if(Notification.permission!=='granted')return;
+  const reg = await navigator.serviceWorker.ready.catch(()=>null);
+  if(!reg)return;
+
+  let title='', body='', actions=[], icon='';
+
+  if(type==='unknown'){
+    title='⬡ Tag NFC inconnu';
+    body = data.uid ? `UID : ${data.uid}` : 'Tag vierge ou format inconnu';
+    actions=[
+      {action:'photo-ai', title:'📷 Photo IA'},
+      {action:'text-ai',  title:'✦ Desc. IA'},
+      {action:'manual',   title:'✎ Manuel'},
+    ];
+  } else if(type==='item'){
+    const item=gI(data.id);if(!item)return;
+    const li=locInfo(item);
+    title=`📦 ${item.name}`;
+    body=`${item.qty} ${item.unit}${li?' · '+li.zone?.name+' › '+li.loc.name:''}`;
+    actions=[
+      {action:'view',   title:'👁 Voir'},
+      {action:'plus1',  title:'+1'},
+      {action:'minus1', title:'-1'},
+      {action:'ranger', title:'📍 Ranger'},
+    ];
+  } else if(type==='loc'){
+    const loc=gL(data.id);if(!loc)return;
+    const zone=gZ(loc.zoneId);
+    const cnt=D.items.filter(i=>i.locationId===data.id).length;
+    title=`📍 ${loc.name}`;
+    body=`${zone?zone.name+' · ':''} ${cnt} article(s)`;
+    actions=[
+      {action:'viewloc',  title:'📦 Voir contenu'},
+      {action:'rangerloc',title:'📥 Ranger ici'},
+    ];
+  }
+
+  try{
+    await reg.showNotification(title,{
+      body, actions, tag:'ss-nfc',
+      icon:'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="%23080c1c"/><text y="44" x="32" font-size="36" text-anchor="middle">⬡</text></svg>',
+      badge:'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><text y="48" x="32" font-size="48" text-anchor="middle">⬡</text></svg>',
+      vibrate:[100,50,100],
+      data:{type, payload:data},
+      requireInteraction: false,
+      silent: false,
+    });
+  }catch(e){}
+}
+
+// ── Handle notification action clicks (from SW message) ──
+function handleNotifAction(action, data){
+  const {type, payload} = data||{};
+  if(action==='photo-ai')  { openAiSheet(payload?.uid||'manual_'+Date.now(),'unknown'); switchAiMode('photo'); }
+  else if(action==='text-ai')   { openAiSheet(payload?.uid||'manual_'+Date.now(),'unknown'); switchAiMode('text'); }
+  else if(action==='manual')    { openAiManualForm(); }
+  else if(action==='view')      { openView(payload?.id); }
+  else if(action==='plus1')     { adj(payload?.id,+1); toast('+1 ajouté','ok'); }
+  else if(action==='minus1')    { adj(payload?.id,-1); toast('-1 retiré','warn'); }
+  else if(action==='ranger')    { enterRangerItemMode(payload?.id); }
+  else if(action==='viewloc')   { openLocDetail(payload?.id); }
+  else if(action==='rangerloc') { enterLocScanMode(); }
+  goTab('home'); // bring app to front
+}
+
+// ── Inline Service Worker (registered from blob) ──
+const SW_CODE = `
+self.addEventListener('notificationclick', e => {
+  e.notification.close();
+  const action  = e.action;
+  const data    = e.notification.data;
+  e.waitUntil(
+    clients.matchAll({type:'window',includeUncontrolled:true}).then(cls => {
+      const c = cls.find(x => x.visibilityState==='visible') || cls[0];
+      if(c){ c.focus(); c.postMessage({type:'notif-action',action,data}); return; }
+      return clients.openWindow('/').then(w => {
+        setTimeout(()=>w?.postMessage({type:'notif-action',action,data}),800);
+      });
+    })
+  );
+});
+self.addEventListener('fetch', e => {
+  if(e.request.mode==='navigate'){
+    e.respondWith(fetch(e.request).catch(()=>caches.match(e.request)));
+  }
+});
+`;
+
+async function registerSW(){
+  if(!('serviceWorker' in navigator))return;
+  try{
+    const blob = new Blob([SW_CODE],{type:'application/javascript'});
+    const url  = URL.createObjectURL(blob);
+    const reg  = await navigator.serviceWorker.register(url,{scope:'/'});
+    // Listen for messages from SW
+    navigator.serviceWorker.addEventListener('message', e=>{
+      if(e.data?.type==='notif-action'){
+        handleNotifAction(e.data.action, e.data.data);
+      }
+    });
+    // Try to revoke blob URL after registration
+    setTimeout(()=>URL.revokeObjectURL(url), 5000);
+  }catch(err){
+    // SW registration failed silently (cross-origin, etc.)
+  }
+}
+
+// ── Patch startLiveScan / stopLiveScan to use WakeLock ──
+const _origStart = startLiveScan;
+startLiveScan = async function(){
+  await _origStart();
+  if(liveActive) await acquireWakeLock();
+};
+const _origStop = stopLiveScan;
+stopLiveScan = function(){
+  _origStop();
+  releaseWakeLock();
+};
+
+// ── Patch handleLiveTag to also show notifications ──
+const _origHandle = handleLiveTag;
+handleLiveTag = function(txt, serialNumber){
+  const tagId = txt || (serialNumber ? 'uid:'+serialNumber : 'blank:'+Date.now());
+  const isI=txt&&txt.startsWith(PI), isL=txt&&txt.startsWith(PL);
+  const id=isI?txt.slice(PI.length):isL?txt.slice(PL.length):null;
+
+  // Determine notification type BEFORE calling original (which may open sheets)
+  let notifType=null, notifData={};
+  if(isI && gI(id))         { notifType='item'; notifData={id}; }
+  else if(isL && gL(id))    { notifType='loc';  notifData={id}; }
+  else if(!isI && !isL)     { notifType='unknown'; notifData={uid:serialNumber||tagId}; }
+
+  // Call original handler
+  _origHandle(txt, serialNumber);
+
+  // Show notification (always, even when app is focused — user can turn off)
+  if(notifType && Notification.permission==='granted'){
+    showTagNotif(notifType, notifData);
+  }
+};
+
+// ── Notification permission banner in NFC tab ──
+function renderNotifBanner(){
+  const el=document.getElementById('notif-banner-slot');
+  if(!el)return;
+  if(!('Notification' in window)){el.innerHTML='';return;}
+  if(Notification.permission==='granted'){
+    el.innerHTML=`<div style="background:#3de8a010;border:1px solid #3de8a025;border-radius:var(--rs);padding:10px 13px;font-family:var(--f-m);font-size:9px;color:var(--ok)">🔔 Notifications activées — tu recevras des alertes pour chaque tag scanné.</div>`;
+    return;
+  }
+  el.innerHTML=`
+    <div class="notif-banner" onclick="askNotifPerm().then(ok=>{if(ok){renderNotifBanner();toast('🔔 Notifications activées !','ok');}})">
+      <span style="font-size:22px">🔔</span>
+      <div>
+        <div style="font-weight:700;font-size:13px;color:var(--t1);margin-bottom:3px">Activer les notifications NFC</div>
+        <div style="font-family:var(--f-m);font-size:8.5px;color:var(--t3);line-height:1.5">Reçois une notification avec boutons d'action à chaque scan — même quand l'app est en arrière-plan.</div>
+      </div>
+      <span style="color:var(--t3)">›</span>
+    </div>`;
+}
+
 /* ══════════════ INIT ══════════════ */
 loadD();
-initTabs();   // <-- must run first to hide all tabs via inline style
+initTabs();
 renderAll();
 renderHome();
 renderNfcTab();
+registerSW();
+askNotifPerm(); // ask permission on first load
+
 </script>
 </body>
 </html>
