@@ -1292,66 +1292,73 @@ function renderFloorPlan(){
     wrap.innerHTML=`<div class="empty-st"><div class="ei">🏠</div><div class="et">AUCUNE PIÈCE — clique "+ Pièce"</div></div>`;
     return;
   }
-  // Build a responsive CSS grid floor plan
-  const cols = D.zones.length<=2?D.zones.length:2;
-  const rows = Math.ceil(D.zones.length/cols);
-  // Determine grid areas from zone order
-  let gridAreas='';
-  for(let r=0;r<rows;r++){
-    let row='"';
-    for(let c=0;c<cols;c++){
-      const idx=r*cols+c;
-      row+=(idx<D.zones.length?'z'+idx:'.')+' ';
-    }
-    gridAreas+=row.trim()+'" ';
-  }
+
   const liveFoundZone = blinkLoc ? D.locs.find(l=>l.id===blinkLoc)?.zoneId : null;
 
+  // Build zone cards — one card per zone, stacked vertically on mobile
+  // Each zone shows its locs as pills inside
+  const zonesHtml = D.zones.map(z=>{
+    const hex=zHex(z.color);
+    const locs=D.locs.filter(l=>l.zoneId===z.id);
+    const cnt=D.items.filter(i=>locs.some(l=>l.id===i.locationId)).length;
+    const isFoundZone=liveFoundZone===z.id;
+
+    const locsHtml=locs.map(loc=>{
+      const isTgt=blinkLoc===loc.id;
+      const lCnt=D.items.filter(i=>i.locationId===loc.id).length;
+      const bg  = isTgt ? '#f871711a' : hex+'18';
+      const bc  = isTgt ? '#f87171'   : hex+'50';
+      const col = isTgt ? 'var(--err)': hex;
+      return`<button onclick="event.stopPropagation();openLocDetail('${loc.id}')"
+        style="display:inline-flex;align-items:center;gap:5px;
+               padding:5px 10px;border-radius:8px;border:1px solid ${bc};
+               background:${bg};color:${col};cursor:pointer;
+               font-family:var(--f-m);font-size:9.5px;
+               ${isTgt?'animation:locGlow .7s ease-in-out infinite;':''}"
+        >${loc.emoji} ${esc(loc.name)} <span style="font-family:var(--f-d);font-size:16px">${lCnt}</span></button>`;
+    }).join('');
+
+    return`<div onclick="openRoomDetail('${z.id}')"
+      style="background:${hex}${isFoundZone?'18':'0d'};
+             border:1px solid ${hex}${isFoundZone?'60':'30'};
+             border-left:4px solid ${hex};
+             border-radius:12px;padding:12px 13px;cursor:pointer;
+             ${isFoundZone?'box-shadow:0 0 0 2px '+hex+'40;':''}
+             transition:filter .15s;"
+      onmouseover="this.style.filter='brightness(1.12)'"
+      onmouseout="this.style.filter='none'">
+      <!-- Header -->
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+        <span style="font-size:20px">${z.emoji}</span>
+        <span style="font-family:var(--f-d);font-size:20px;letter-spacing:1px;color:${hex};flex:1">${esc(z.name)}</span>
+        <span style="font-family:var(--f-d);font-size:28px;color:${hex}77">${cnt}</span>
+      </div>
+      <!-- Location pills -->
+      <div style="display:flex;flex-wrap:wrap;gap:6px">
+        ${locsHtml||`<span style="font-family:var(--f-m);font-size:9px;color:var(--t3)">Aucun emplacement</span>`}
+      </div>
+    </div>`;
+  }).join('');
+
   wrap.innerHTML=`
-    <div style="padding:12px 12px 6px;font-family:var(--f-m);font-size:8px;color:var(--t3);letter-spacing:1.5px">
+    <div style="padding:10px 12px 6px;font-family:var(--f-m);font-size:8px;color:var(--t3);letter-spacing:1.5px">
       PLAN DE LA MAISON · Appuie sur une pièce ou un emplacement
     </div>
-    <div id="fp-grid" style="margin:0 12px 12px;display:grid;grid-template-columns:repeat(${cols},1fr);gap:2px;background:var(--b1);border:2px solid var(--b1);border-radius:var(--r);overflow:hidden;grid-template-areas:${gridAreas}">
-      ${D.zones.map((z,i)=>{
-        const hex=zHex(z.color);
-        const locs=D.locs.filter(l=>l.zoneId===z.id);
-        const cnt=D.items.filter(i2=>locs.some(l=>l.id===i2.locationId)).length;
-        const isFoundZone=liveFoundZone===z.id;
-        const locsHtml=locs.map(loc=>{
-          const isTgt=blinkLoc===loc.id;
-          const lCnt=D.items.filter(i2=>i2.locationId===loc.id).length;
-          return`<div class="fp-loc${isTgt?' found':''}" 
-            style="color:${isTgt?'var(--err)':hex};border-color:${isTgt?'var(--err)':hex+'40'};background:${isTgt?'#f871711a':hex+'15'}"
-            onclick="event.stopPropagation();openLocDetail('${loc.id}')">
-            <span class="fp-loc-em">${loc.emoji}</span>
-            <span style="font-family:var(--f-m);font-size:8px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(loc.name)}</span>
-            <span class="fp-loc-cnt">${lCnt}</span>
-          </div>`;
-        }).join('');
-        return`<div class="fp-room" style="grid-area:z${i};background:${hex}${isFoundZone?'18':'0c'};${isFoundZone?'box-shadow:inset 0 0 0 2px '+hex+';':''}"
-          onclick="openRoomDetail('${z.id}')">
-          <div class="fp-room-top">
-            <div>
-              <div style="font-size:18px;line-height:1">${z.emoji}</div>
-              <div class="fp-room-name" style="color:${hex}">${esc(z.name)}</div>
-            </div>
-            <div class="fp-room-cnt" style="color:${hex}88">${cnt}</div>
-          </div>
-          <div class="fp-locs">${locsHtml||'<span style="font-family:var(--f-m);font-size:8px;color:var(--t3)">Vide</span>'}</div>
-        </div>`;
-      }).join('')}
+    <div style="padding:0 12px 12px;display:flex;flex-direction:column;gap:8px">
+      ${zonesHtml}
     </div>
     <div style="padding:0 12px 12px;font-family:var(--f-m);font-size:8.5px;color:var(--t3);line-height:1.6">
-      💡 Clique sur un emplacement pour voir les articles. 
-      ${blinkLoc?`<span style="color:var(--err)">⬤ Emplacement localisé actif</span>`:'Depuis une fiche article → "Localiser" fait clignoter.'}
+      💡 ${blinkLoc
+        ?`<span style="color:var(--err)">⬤ Emplacement localisé en surbrillance</span>`
+        :'Depuis une fiche article → "Localiser" met en surbrillance.'}
     </div>`;
 
-  // Auto-scroll to found zone
+  // Scroll to found zone
   if(liveFoundZone){
     setTimeout(()=>{
-      const el=document.querySelector('.fp-room');
-      if(el)el.scrollIntoView({behavior:'smooth',block:'center'});
-    },100);
+      const found=wrap.querySelector('[style*="box-shadow"]');
+      found?.scrollIntoView({behavior:'smooth',block:'center'});
+    },150);
   }
 }
 
@@ -2619,11 +2626,32 @@ document.addEventListener('visibilitychange',async()=>{
 });
 
 // ── Notification permission ──
+// IMPORTANT: must be called directly from a click handler, not async chain
+function askNotifPermFromClick(){
+  if(!('Notification' in window)){
+    toast('Notifications non supportées sur ce navigateur','err');
+    return;
+  }
+  if(Notification.permission==='granted'){
+    toast('🔔 Notifications déjà activées !','ok');
+    renderNotifBanner();
+    return;
+  }
+  // Request must come synchronously from user gesture
+  Notification.requestPermission().then(p=>{
+    if(p==='granted'){
+      renderNotifBanner();
+      renderNfcTab();
+      toast('🔔 Notifications activées !','ok');
+    } else {
+      toast('Notifications refusées — active-les dans les réglages du navigateur','warn');
+    }
+  });
+}
+
 async function askNotifPerm(){
   if(!('Notification' in window))return false;
-  if(Notification.permission==='granted')return true;
-  const p = await Notification.requestPermission();
-  return p==='granted';
+  return Notification.permission==='granted';
 }
 
 // ── Show rich notification via Service Worker ──
@@ -2776,15 +2804,21 @@ function renderNotifBanner(){
   if(!el)return;
   if(!('Notification' in window)){el.innerHTML='';return;}
   if(Notification.permission==='granted'){
-    el.innerHTML=`<div style="background:#3de8a010;border:1px solid #3de8a025;border-radius:var(--rs);padding:10px 13px;font-family:var(--f-m);font-size:9px;color:var(--ok)">🔔 Notifications activées — tu recevras des alertes pour chaque tag scanné.</div>`;
+    el.innerHTML=`
+      <div style="background:#3de8a010;border:1px solid #3de8a025;border-radius:var(--rs);padding:10px 13px;display:flex;align-items:center;gap:8px">
+        <span>🔔</span>
+        <span style="font-family:var(--f-m);font-size:9px;color:var(--ok);flex:1">Notifications activées — alertes à chaque scan NFC.</span>
+      </div>`;
     return;
   }
   el.innerHTML=`
-    <div class="notif-banner" onclick="askNotifPerm().then(ok=>{if(ok){renderNotifBanner();toast('🔔 Notifications activées !','ok');}})">
+    <div class="notif-banner" onclick="askNotifPermFromClick()">
       <span style="font-size:22px">🔔</span>
-      <div>
+      <div style="flex:1">
         <div style="font-weight:700;font-size:13px;color:var(--t1);margin-bottom:3px">Activer les notifications NFC</div>
-        <div style="font-family:var(--f-m);font-size:8.5px;color:var(--t3);line-height:1.5">Reçois une notification avec boutons d'action à chaque scan — même quand l'app est en arrière-plan.</div>
+        <div style="font-family:var(--f-m);font-size:8.5px;color:var(--t3);line-height:1.5">
+          Reçois une notification avec boutons d'action à chaque scan — même en arrière-plan.
+        </div>
       </div>
       <span style="color:var(--t3)">›</span>
     </div>`;
@@ -2797,7 +2831,6 @@ renderAll();
 renderHome();
 renderNfcTab();
 registerSW();
-askNotifPerm(); // ask permission on first load
 
 </script>
 </body>
